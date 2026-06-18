@@ -4,13 +4,32 @@ import { CutshortScraper } from './cutshort.scraper';
 import { InstahyreScraper } from './instahyre.scraper';
 import { LinkedInScraper } from './linkedin.scraper';
 import { YCombinatorScraper } from './ycombinator.scraper';
+import { GoogleScraper } from './google.scraper';
+import { MicrosoftScraper } from './microsoft.scraper';
+import { AmazonScraper } from './amazon.scraper';
+import { OracleScraper } from './oracle.scraper';
+import { LeverScraper } from './lever.scraper';
+import { GreenhouseScraper } from './greenhouse.scraper';
+import { StartupsScraper } from './startups.scraper';
 
 export const ALL_SCRAPERS: BaseScraper[] = [
+  // Job boards (auth-required — use cookies)
   new WellfoundScraper(),
   new CutshortScraper(),
-  new InstahyreScraper(),
   new LinkedInScraper(),
+  // Job boards (no auth)
+  new InstahyreScraper(),
   new YCombinatorScraper(),
+  // Big 4 + MNCs via public APIs
+  new GoogleScraper(),
+  new MicrosoftScraper(),
+  new AmazonScraper(),
+  new OracleScraper(),
+  // Indian startups via Lever / Greenhouse APIs
+  new LeverScraper(),
+  new GreenhouseScraper(),
+  // Indian startups via Playwright
+  new StartupsScraper(),
 ];
 
 export {
@@ -20,4 +39,11 @@ export {
   InstahyreScraper,
   LinkedInScraper,
   YCombinatorScraper,
+  GoogleScraper,
+  MicrosoftScraper,
+  AmazonScraper,
+  OracleScraper,
+  LeverScraper,
+  GreenhouseScraper,
+  StartupsScraper,
 };

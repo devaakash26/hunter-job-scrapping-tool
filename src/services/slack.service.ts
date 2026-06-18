@@ -6,37 +6,50 @@ import { config } from '../config/env';
 export class SlackService {
   async sendJobAlert(job: RawJob): Promise<void> {
     const emoji = this.getJobEmoji(job);
-    const header = `${emoji} ${SLACK.MESSAGES.JOB_HEADER_PREFIX} — ${job.title} at ${job.company}`;
+    const badges: string[] = [];
+    if (job.easyApply) badges.push('⚡ Easy Apply');
+    if (job.ycBatch) badges.push(`🚀 YC ${job.ycBatch}`);
+
+    const salaryLine = job.salary && job.salary !== 'Not mentioned'
+      ? `💰 *${job.salary}*`
+      : '💰 Salary not disclosed';
+
+    const tagsLine = job.tags
+      ? job.tags.split(',').slice(0, 5).map((t) => `\`${t.trim()}\``).join('  ')
+      : '';
 
     const payload = {
-      blocks: [
+      attachments: [
         {
-          type: 'header',
-          text: { type: 'plain_text', text: header.substring(0, 150), emoji: true },
-        },
-        {
-          type: 'section',
-          fields: [
-            { type: 'mrkdwn', text: `*Company:*\n${job.company}` },
-            { type: 'mrkdwn', text: `*Location:*\n${job.location || 'Not specified'}` },
-            { type: 'mrkdwn', text: `*Salary:*\n${job.salary}` },
-            { type: 'mrkdwn', text: `*Source:*\n${job.source.toUpperCase()}` },
-            { type: 'mrkdwn', text: `*Tags:*\n${job.tags || 'N/A'}` },
-            { type: 'mrkdwn', text: `*Posted:*\n${job.postedAt || 'Unknown'}` },
-          ],
-        },
-        {
-          type: 'actions',
-          elements: [
+          color: '#5865f2',
+          blocks: [
             {
-              type: 'button',
-              text: { type: 'plain_text', text: SLACK.MESSAGES.APPLY_BUTTON_TEXT, emoji: true },
-              url: job.url,
-              style: 'primary',
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `${emoji} *${job.title}*\n*${job.company}*   ·   📍 ${job.location || 'India'}`,
+              },
+              accessory: {
+                type: 'button',
+                text: { type: 'plain_text', text: SLACK.MESSAGES.APPLY_BUTTON_TEXT, emoji: true },
+                url: job.url,
+                style: 'primary',
+              },
             },
+            {
+              type: 'section',
+              fields: [
+                { type: 'mrkdwn', text: salaryLine },
+                { type: 'mrkdwn', text: `🏷️ *Source:* ${job.source.toUpperCase()}` },
+                ...(job.postedAt ? [{ type: 'mrkdwn', text: `🕐 *Posted:* ${job.postedAt}` }] : []),
+                ...(badges.length ? [{ type: 'mrkdwn', text: badges.join('   ') }] : []),
+              ],
+            },
+            ...(tagsLine
+              ? [{ type: 'context', elements: [{ type: 'mrkdwn', text: `🔧 ${tagsLine}` }] }]
+              : []),
           ],
         },
-        { type: 'divider' },
       ],
     };
 

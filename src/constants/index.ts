@@ -4,3 +4,4 @@ export * from './cron';
 export * from './slack';
 export * from './dashboard';
 export * from './scraper';
+export * from './auth';

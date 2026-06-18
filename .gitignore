@@ -5,3 +5,4 @@ fallback/
 .env
 *.log
 .DS_Store
+.vercel/

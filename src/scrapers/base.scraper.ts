@@ -1,4 +1,6 @@
-import { Browser, BrowserContext } from 'playwright-core';
+import { Browser, BrowserContext, BrowserContextOptions } from 'playwright-core';
+
+type StorageState = NonNullable<BrowserContextOptions['storageState']>;
 import * as fs from 'fs';
 import * as path from 'path';
 import { RawJob } from '../types';
@@ -15,15 +17,10 @@ export abstract class BaseScraper {
     const browser = await this.launchBrowser();
 
     try {
-      let context: BrowserContext;
-
-      if (cookiePath && fs.existsSync(cookiePath)) {
-        const storageState = JSON.parse(fs.readFileSync(cookiePath, 'utf-8'));
-        context = await browser.newContext({ storageState, userAgent: SCRAPER.USER_AGENT });
-        this.log(`Loaded cookies from ${cookiePath}`);
-      } else {
-        context = await browser.newContext({ userAgent: SCRAPER.USER_AGENT });
-      }
+      const storageState = this.loadStorageState(cookiePath);
+      const context = storageState
+        ? await browser.newContext({ storageState, userAgent: SCRAPER.USER_AGENT })
+        : await browser.newContext({ userAgent: SCRAPER.USER_AGENT });
 
       context.setDefaultTimeout(SCRAPER.BROWSER_TIMEOUT_MS);
       context.setDefaultNavigationTimeout(SCRAPER.NAVIGATION_TIMEOUT_MS);
@@ -32,6 +29,32 @@ export abstract class BaseScraper {
     } finally {
       await browser.close();
     }
+  }
+
+  // Env var takes priority (Vercel), falls back to local cookie file
+  private loadStorageState(cookiePath?: string): StorageState | null {
+    const envKey = `${this.platform.toUpperCase()}_COOKIES_B64`;
+    const b64 = process.env[envKey];
+    if (b64) {
+      try {
+        const decoded = Buffer.from(b64, 'base64').toString('utf-8');
+        this.log('Loaded cookies from env var');
+        return JSON.parse(decoded) as StorageState;
+      } catch {
+        this.logError(new Error(`Failed to parse ${envKey} — invalid base64 or JSON`));
+      }
+    }
+
+    if (cookiePath && fs.existsSync(cookiePath)) {
+      try {
+        this.log(`Loaded cookies from ${cookiePath}`);
+        return JSON.parse(fs.readFileSync(cookiePath, 'utf-8')) as StorageState;
+      } catch {
+        this.logError(new Error(`Failed to parse cookie file: ${cookiePath}`));
+      }
+    }
+
+    return null;
   }
 
   private async launchBrowser(): Promise<Browser> {

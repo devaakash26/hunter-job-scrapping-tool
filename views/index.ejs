@@ -5,156 +5,272 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Job Hunter Dashboard</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    header { background: #1e293b; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
-    header h1 { font-size: 1.25rem; font-weight: 700; color: #f8fafc; }
-    header nav a { color: #94a3b8; text-decoration: none; margin-left: 20px; font-size: 0.875rem; }
-    header nav a:hover { color: #f8fafc; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0f1e; --surface: #111827; --surface2: #1f2937;
+      --border: #1f2937; --border2: #374151;
+      --text: #f9fafb; --muted: #6b7280; --accent: #6366f1;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Top Bar ── */
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .logo { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.85rem; padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
+    .nav-links a:hover, .nav-links a.active { background: var(--surface2); color: var(--text); }
+    .nav-links .logout { color: #f87171; }
+    .total-badge { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+
+    /* ── Filters Bar ── */
+    .filters-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .status-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tab { padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; text-decoration: none; border: 1px solid var(--border2); color: var(--muted); transition: all 0.15s; white-space: nowrap; }
+    .tab:hover { background: var(--surface2); color: var(--text); }
+    .tab.active { color: #fff; border-color: transparent; }
+    .search-row { display: flex; gap: 8px; flex: 1; min-width: 260px; }
+    .search-row input, .search-row select { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 12px; color: var(--text); font-size: 0.85rem; outline: none; }
+    .search-row input { flex: 1; }
+    .search-row input:focus, .search-row select:focus { border-color: var(--accent); }
+    .search-row input::placeholder { color: var(--muted); }
+    .search-row select option { background: #1f2937; }
+    .btn-search { background: var(--accent); border: none; border-radius: 8px; padding: 7px 16px; color: #fff; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-search:hover { background: #4f46e5; }
+
+    /* ── Cards Grid ── */
     .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
-    .filters { background: #1e293b; border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-    .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-    .tab { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; text-decoration: none; border: 1px solid #334155; color: #94a3b8; transition: all 0.15s; }
-    .tab:hover { background: #334155; color: #f8fafc; }
-    .tab.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
-    .search-form { display: flex; gap: 8px; flex: 1; min-width: 280px; }
-    .search-form input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 12px; color: #e2e8f0; font-size: 0.875rem; }
-    .search-form input:focus { outline: none; border-color: #3b82f6; }
-    .search-form button { background: #3b82f6; border: none; border-radius: 6px; padding: 8px 16px; color: white; cursor: pointer; font-size: 0.875rem; }
-    .search-form button:hover { background: #2563eb; }
-    .stats-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-    .stat-card { background: #1e293b; border-radius: 8px; padding: 12px 20px; flex: 1; min-width: 120px; text-align: center; }
-    .stat-card .value { font-size: 1.5rem; font-weight: 700; }
-    .stat-card .label { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
-    .table-wrap { background: #1e293b; border-radius: 8px; overflow: hidden; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    th { background: #0f172a; padding: 10px 14px; text-align: left; font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    td { padding: 10px 14px; border-top: 1px solid #1a2740; vertical-align: middle; }
-    tr:hover td { background: #162032; }
-    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
-    .source-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #0f172a; color: #94a3b8; border: 1px solid #334155; }
-    a.job-link { color: #60a5fa; text-decoration: none; font-weight: 500; }
-    a.job-link:hover { text-decoration: underline; }
-    .salary { color: #4ade80; font-weight: 500; }
-    .tag-easy { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b44; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 6px; }
-    .tag-yc { background: #f9731622; color: #f97316; border: 1px solid #f9731644; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 4px; }
-    .status-select { background: #0f172a; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; color: #e2e8f0; font-size: 0.8rem; cursor: pointer; }
-    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
-    .page-btn { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px 14px; color: #94a3b8; text-decoration: none; font-size: 0.875rem; }
-    .page-btn:hover, .page-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
-    .empty { text-align: center; padding: 60px; color: #64748b; }
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+    .empty-state { grid-column: 1/-1; text-align: center; padding: 80px 0; color: var(--muted); }
+    .empty-state span { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+    /* ── Job Card ── */
+    .job-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .job-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .job-card.status-new     { border-left: 3px solid #3b82f6; }
+    .job-card.status-saved   { border-left: 3px solid #8b5cf6; }
+    .job-card.status-applied { border-left: 3px solid #f59e0b; }
+    .job-card.status-interview { border-left: 3px solid #10b981; }
+    .job-card.status-rejected { border-left: 3px solid #ef4444; }
+    .job-card.status-offer   { border-left: 3px solid #22c55e; }
+
+    /* Card header */
+    .card-top { display: flex; align-items: flex-start; gap: 12px; }
+    .company-avatar {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .card-meta { flex: 1; min-width: 0; }
+    .company-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .company-name { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+    .source-badge {
+      font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+      color: #fff; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge-easy { background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .badge-yc   { background: rgba(249,115,22,0.2); color: #f97316; border: 1px solid rgba(249,115,22,0.3); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .job-title { font-size: 1rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+
+    /* Card body */
+    .card-details { display: flex; flex-direction: column; gap: 5px; }
+    .detail-row { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); }
+    .detail-row .val { color: #d1d5db; }
+    .salary-val { color: #4ade80 !important; font-weight: 600; }
+
+    /* Tags */
+    .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag { background: var(--surface2); border: 1px solid var(--border2); color: #9ca3af; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; }
+
+    /* Card footer */
+    .card-footer { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+    .status-select {
+      background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px;
+      padding: 5px 8px; color: var(--text); font-size: 0.78rem; cursor: pointer; flex: 1; outline: none;
+    }
+    .status-select:focus { border-color: var(--accent); }
+    .apply-btn {
+      background: var(--accent); color: #fff; text-decoration: none;
+      font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+      white-space: nowrap; transition: background 0.15s;
+    }
+    .apply-btn:hover { background: #4f46e5; }
+    .posted-date { font-size: 0.72rem; color: var(--muted); }
+
+    /* Pagination */
+    .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 32px; flex-wrap: wrap; }
+    .page-btn { background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--muted); text-decoration: none; font-size: 0.82rem; transition: all 0.15s; }
+    .page-btn:hover, .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Toast */
+    #toast { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none; z-index: 999; }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { background: #ef4444; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🎯 Job Hunter</h1>
-    <nav>
-      <a href="/">Dashboard</a>
-      <a href="/stats">Stats</a>
-    </nav>
-  </header>
 
-  <div class="container">
-    <div class="filters">
-      <div class="filter-tabs">
-        <a href="/?status=all&search=<%= filters.search %>" class="tab <%= filters.status === 'all' ? 'active' : '' %>">All (<%= total %>)</a>
-        <% statuses.forEach(function(s) { %>
-          <a href="/?status=<%= s %>&search=<%= filters.search %>"
-             class="tab <%= filters.status === s ? 'active' : '' %>"
-             style="<%= filters.status === s ? 'background:' + statusColors[s] + ';border-color:' + statusColors[s] : '' %>">
-            <%= s.charAt(0).toUpperCase() + s.slice(1) %>
-          </a>
+<header>
+  <div class="logo">🎯 Job Hunter</div>
+  <nav class="nav-links">
+    <a href="/" class="active">Dashboard <span class="total-badge"><%= total %></span></a>
+    <a href="/stats">Stats</a>
+    <a href="/logout" class="logout">Logout</a>
+  </nav>
+</header>
+
+<div class="filters-wrap">
+  <div class="status-tabs">
+    <%
+      const STATUS_META = {
+        all:       { label: 'All',       color: '#6366f1' },
+        new:       { label: 'New',       color: '#3b82f6' },
+        saved:     { label: 'Saved',     color: '#8b5cf6' },
+        applied:   { label: 'Applied',   color: '#f59e0b' },
+        interview: { label: 'Interview', color: '#10b981' },
+        rejected:  { label: 'Rejected',  color: '#ef4444' },
+        offer:     { label: 'Offer',     color: '#22c55e' },
+      };
+      Object.entries(STATUS_META).forEach(([key, meta]) => {
+    %>
+      <a href="/?status=<%= key %>&search=<%= filters.search %>&source=<%= filters.source %>"
+         class="tab <%= filters.status === key ? 'active' : '' %>"
+         style="<%= filters.status === key ? 'background:' + meta.color + ';border-color:' + meta.color : '' %>">
+        <%= meta.label %>
+      </a>
+    <% }); %>
+  </div>
+  <form class="search-row" method="get">
+    <input type="hidden" name="status" value="<%= filters.status %>">
+    <input type="text" name="search" placeholder="Search title or company…" value="<%= filters.search %>">
+    <select name="source">
+      <option value="">All sources</option>
+      <% sources.forEach(function(s) { %>
+        <option value="<%= s %>" <%= filters.source === s ? 'selected' : '' %>><%= s.toUpperCase() %></option>
+      <% }); %>
+    </select>
+    <button class="btn-search" type="submit">Search</button>
+  </form>
+</div>
+
+<div class="container">
+  <div class="cards-grid">
+    <% if (jobs.length === 0) { %>
+      <div class="empty-state">
+        <span>🔍</span>
+        No jobs found. Run the scraper or try different filters.
+      </div>
+    <% } %>
+
+    <% jobs.forEach(function(job) {
+      const colorMap = platformColors;
+      const bgColor = colorMap[job.source] || '#6366f1';
+      const initial = job.company.charAt(0).toUpperCase();
+      const tagList = job.tags ? job.tags.split(',').slice(0, 4) : [];
+    %>
+    <div class="job-card status-<%= job.status %>" data-id="<%= job.id %>">
+
+      <div class="card-top">
+        <div class="company-avatar" style="background: <%= bgColor %>22; color: <%= bgColor %>; border: 1px solid <%= bgColor %>44;">
+          <%= initial %>
+        </div>
+        <div class="card-meta">
+          <div class="company-row">
+            <span class="company-name"><%= job.company %></span>
+            <span class="source-badge" style="background:<%= bgColor %>33; color:<%= bgColor %>; border:1px solid <%= bgColor %>55;">
+              <%= job.source.toUpperCase() %>
+            </span>
+            <% if (job.easyApply) { %><span class="badge-easy">⚡ Easy</span><% } %>
+            <% if (job.ycBatch) { %><span class="badge-yc">🚀 YC</span><% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="job-title"><%= job.title %></div>
+
+      <div class="card-details">
+        <div class="detail-row">📍 <span class="val"><%= job.location || 'Not specified' %></span></div>
+        <div class="detail-row">💰 <span class="val salary-val"><%= job.salary %></span></div>
+        <% if (job.postedAt) { %>
+          <div class="detail-row">🕐 <span class="val"><%= job.postedAt %></span></div>
+        <% } %>
+      </div>
+
+      <% if (tagList.length > 0) { %>
+      <div class="tags">
+        <% tagList.forEach(function(tag) { %>
+          <span class="tag"><%= tag.trim() %></span>
         <% }); %>
       </div>
-      <form class="search-form" method="get">
-        <input type="hidden" name="status" value="<%= filters.status %>">
-        <input type="text" name="search" placeholder="Search by title or company..." value="<%= filters.search %>">
-        <button type="submit">Search</button>
-      </form>
-    </div>
+      <% } %>
 
-    <div class="table-wrap">
-      <% if (jobs.length === 0) { %>
-        <div class="empty">No jobs found. Run the scraper to fetch new listings.</div>
-      <% } else { %>
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Company</th>
-            <th>Salary</th>
-            <th>Location</th>
-            <th>Source</th>
-            <th>Status</th>
-            <th>Applied</th>
-            <th>Scraped</th>
-            <th>Link</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% jobs.forEach(function(job) { %>
-          <tr>
-            <td>
-              <%= job.title %>
-              <% if (job.easyApply) { %><span class="tag-easy">⚡ Easy</span><% } %>
-              <% if (job.ycBatch) { %><span class="tag-yc">🚀 YC <%= job.ycBatch %></span><% } %>
-            </td>
-            <td><strong><%= job.company %></strong></td>
-            <td class="salary"><%= job.salary || 'N/A' %></td>
-            <td><%= job.location || '–' %></td>
-            <td><span class="source-badge"><%= job.source.toUpperCase() %></span></td>
-            <td>
-              <select class="status-select" onchange="updateStatus(<%= job.id %>, this.value)">
-                <% ['new','saved','applied','interview','rejected','offer'].forEach(function(s) { %>
-                  <option value="<%= s %>" <%= job.status === s ? 'selected' : '' %>
-                    style="<%= job.status === s ? 'color: inherit' : '' %>">
-                    <%= s.charAt(0).toUpperCase() + s.slice(1) %>
-                  </option>
-                <% }); %>
-              </select>
-            </td>
-            <td><%= job.appliedAt ? new Date(job.appliedAt).toLocaleDateString('en-IN') : '–' %></td>
-            <td><%= new Date(job.createdAt).toLocaleDateString('en-IN') %></td>
-            <td><a class="job-link" href="<%= job.url %>" target="_blank" rel="noopener">Apply →</a></td>
-          </tr>
+      <div class="card-footer">
+        <select class="status-select" onchange="updateStatus(<%= job.id %>, this.value)">
+          <% ['new','saved','applied','interview','rejected','offer'].forEach(function(s) { %>
+            <option value="<%= s %>" <%= job.status === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
           <% }); %>
-        </tbody>
-      </table>
-      <% } %>
-    </div>
+        </select>
+        <a class="apply-btn" href="<%= job.url %>" target="_blank" rel="noopener">Apply →</a>
+      </div>
 
-    <% if (totalPages > 1) { %>
-    <div class="pagination">
-      <% if (currentPage > 1) { %>
-        <a class="page-btn" href="/?status=<%= filters.status %>&search=<%= filters.search %>&page=<%= currentPage - 1 %>">← Prev</a>
-      <% } %>
-      <% for (let i = 1; i <= totalPages; i++) { %>
-        <a class="page-btn <%= i === currentPage ? 'active' : '' %>"
-           href="/?status=<%= filters.status %>&search=<%= filters.search %>&page=<%= i %>"><%= i %></a>
-      <% } %>
-      <% if (currentPage < totalPages) { %>
-        <a class="page-btn" href="/?status=<%= filters.status %>&search=<%= filters.search %>&page=<%= currentPage + 1 %>">Next →</a>
-      <% } %>
     </div>
-    <% } %>
+    <% }); %>
   </div>
 
-  <script>
-    async function updateStatus(jobId, status) {
-      try {
-        const res = await fetch('/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jobId, status })
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          alert('Error: ' + err.error);
-        }
-      } catch (e) {
-        alert('Failed to update status');
+  <% if (totalPages > 1) { %>
+  <div class="pagination">
+    <% if (currentPage > 1) { %>
+      <a class="page-btn" href="/?status=<%= filters.status %>&search=<%= filters.search %>&source=<%= filters.source %>&page=<%= currentPage - 1 %>">← Prev</a>
+    <% } %>
+    <% for (let i = Math.max(1, currentPage - 3); i <= Math.min(totalPages, currentPage + 3); i++) { %>
+      <a class="page-btn <%= i === currentPage ? 'active' : '' %>"
+         href="/?status=<%= filters.status %>&search=<%= filters.search %>&source=<%= filters.source %>&page=<%= i %>"><%= i %></a>
+    <% } %>
+    <% if (currentPage < totalPages) { %>
+      <a class="page-btn" href="/?status=<%= filters.status %>&search=<%= filters.search %>&source=<%= filters.source %>&page=<%= currentPage + 1 %>">Next →</a>
+    <% } %>
+  </div>
+  <% } %>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  async function updateStatus(jobId, status) {
+    try {
+      const res = await fetch('/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, status })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      // Update card border colour without page reload
+      const card = document.querySelector(`[data-id="${jobId}"]`);
+      if (card) {
+        card.className = card.className.replace(/status-\w+/, `status-${status}`);
       }
+      showToast('Status updated ✓');
+    } catch (e) {
+      showToast(e.message, true);
     }
-  </script>
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = isError ? 'error' : '';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
 </body>
 </html>

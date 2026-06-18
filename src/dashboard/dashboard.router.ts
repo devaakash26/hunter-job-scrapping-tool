@@ -1,24 +1,33 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { DashboardService } from './dashboard.service';
-import { ScraperService } from '../services/scraper.service';
-import { DASHBOARD, VIEWS } from '../constants';
+import { DASHBOARD, VIEWS, PLATFORMS, PLATFORM_COLORS } from '../constants';
 import { JobStatus, JobFilters, JobUpdatePayload } from '../types';
-import { config } from '../config/env';
+import { requireAuth, handleLogin, handleLogout } from '../middleware/auth';
 
 const router = Router();
 const dashboardService = new DashboardService();
-const scraperService = new ScraperService();
 
-function requireApiKey(req: Request, res: Response, next: NextFunction): void {
-  const key = req.headers[DASHBOARD.API_KEY_HEADER];
-  if (key !== config.dashboard.apiKey) {
-    res.status(401).json({ error: 'Unauthorized' });
+// ── Auth routes (no requireAuth guard) ──────────────────────────
+router.get('/login', (req: Request, res: Response): void => {
+  // Already logged in → go home
+  const sc = (req as Request & { signedCookies: Record<string, string> }).signedCookies;
+  if (sc['jh_auth'] === '1') {
+    res.redirect('/');
     return;
   }
-  next();
-}
+  res.render('login', {
+    error: null,
+    next: (req.query.next as string) || '',
+  });
+});
 
-router.get('/', async (req: Request, res: Response) => {
+router.post('/login', handleLogin);
+router.get('/logout', handleLogout);
+
+// ── Protected routes (requireAuth on all) ───────────────────────
+router.use(requireAuth);
+
+router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const filters: JobFilters = {
       status: (req.query.status as JobStatus | 'all') || 'all',
@@ -28,13 +37,14 @@ router.get('/', async (req: Request, res: Response) => {
     };
 
     const { jobs, total } = await dashboardService.getJobs(filters);
+    const sources = Object.values(PLATFORMS);
 
     res.render(VIEWS.INDEX, {
       jobs,
       total,
       filters,
-      statuses: DASHBOARD.JOB_STATUSES,
-      statusColors: DASHBOARD.STATUS_COLORS,
+      sources,
+      platformColors: PLATFORM_COLORS,
       currentPage: filters.page ?? 1,
       totalPages: Math.ceil(total / DASHBOARD.ITEMS_PER_PAGE),
     });
@@ -44,7 +54,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/update-status', async (req: Request, res: Response) => {
+router.post('/update-status', async (req: Request, res: Response): Promise<void> => {
   try {
     const { jobId, status } = req.body as JobUpdatePayload;
 
@@ -71,30 +81,17 @@ router.post('/update-status', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/stats', async (_req: Request, res: Response) => {
+router.get('/stats', async (_req: Request, res: Response): Promise<void> => {
   try {
     const stats = await dashboardService.getStats();
-    res.render(VIEWS.STATS, { stats, statusColors: DASHBOARD.STATUS_COLORS });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).send(`<pre>Error: ${message}</pre>`);
-  }
-});
-
-router.get('/run-now', requireApiKey, async (_req: Request, res: Response) => {
-  try {
-    res.json({ triggered: true, timestamp: new Date().toISOString() });
-    // Run after responding so the client isn't kept waiting
-    setImmediate(async () => {
-      try {
-        await scraperService.runPipeline();
-      } catch (err) {
-        console.error(`[${new Date().toISOString()}] [DASHBOARD] run-now pipeline error:`, err);
-      }
+    res.render(VIEWS.STATS, {
+      stats,
+      platformColors: PLATFORM_COLORS,
+      statusColors: DASHBOARD.STATUS_COLORS,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    res.status(500).send(`<pre>Error: ${message}</pre>`);
   }
 });
 
