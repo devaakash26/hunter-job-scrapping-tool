@@ -113,6 +113,8 @@ router.get('/stats', async (_req: Request, res: Response): Promise<void> => {
     const stats = await dashboardService.getStats();
     res.render(VIEWS.STATS, {
       stats,
+      statusCounts: stats.byStatus,
+      total: stats.total,
       platformColors: PLATFORM_COLORS,
       statusColors: DASHBOARD.STATUS_COLORS,
     });
