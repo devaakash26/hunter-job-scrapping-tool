@@ -1,0 +1,7 @@
+node_modules/
+dist/
+cookies/
+fallback/
+.env
+*.log
+.DS_Store

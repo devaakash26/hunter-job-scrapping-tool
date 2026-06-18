@@ -1,0 +1,37 @@
+{
+  "name": "job-hunter",
+  "version": "1.0.0",
+  "description": "Automated job scraping and alerting system",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "save-cookies": "ts-node src/setup/saveCookies.ts",
+    "postinstall": "node -e \"if(!process.env.VERCEL) require('child_process').execSync('npx playwright install chromium', {stdio:'inherit'})\""
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^123.0.0",
+    "@upstash/qstash": "^2.7.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.11.3",
+    "playwright-core": "^1.40.0",
+    "reflect-metadata": "^0.1.13",
+    "typeorm": "^0.3.17"
+  },
+  "devDependencies": {
+    "@types/ejs": "^3.1.4",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.10.9",
+    "@vercel/node": "^3.0.0",
+    "playwright": "^1.40.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2"
+  }
+}

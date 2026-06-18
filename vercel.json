@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "functions": {
+    "api/server.ts": {
+      "maxDuration": 30,
+      "includeFiles": "views/**"
+    },
+    "api/cron.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    }
+  },
+  "routes": [
+    { "src": "/api/cron", "dest": "/api/cron" },
+    { "src": "/(.*)", "dest": "/api/server" }
+  ]
+}

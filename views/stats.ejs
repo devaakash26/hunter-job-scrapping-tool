@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stats — Job Hunter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+    header h1 { font-size: 1.25rem; font-weight: 700; color: #f8fafc; }
+    header nav a { color: #94a3b8; text-decoration: none; margin-left: 20px; font-size: 0.875rem; }
+    header nav a:hover { color: #f8fafc; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+    h2 { font-size: 1rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; margin-top: 32px; }
+    h2:first-of-type { margin-top: 0; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi { background: #1e293b; border-radius: 10px; padding: 20px; text-align: center; }
+    .kpi .value { font-size: 2rem; font-weight: 700; color: #f8fafc; }
+    .kpi .label { font-size: 0.75rem; color: #64748b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi .delta { font-size: 0.8rem; margin-top: 4px; }
+    .delta.up { color: #4ade80; }
+    .delta.down { color: #f87171; }
+    .bar-list { background: #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+    .bar-item { margin-bottom: 14px; }
+    .bar-item:last-child { margin-bottom: 0; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; }
+    .bar-label span:first-child { font-weight: 500; }
+    .bar-label span:last-child { color: #64748b; }
+    .bar-track { background: #0f172a; border-radius: 4px; height: 8px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .response-rate { font-size: 3rem; font-weight: 700; color: #22c55e; }
+    .response-rate-sub { color: #64748b; font-size: 0.85rem; margin-top: 6px; }
+    .week-compare { display: flex; gap: 16px; }
+    .week-box { flex: 1; background: #1e293b; border-radius: 10px; padding: 20px; text-align: center; }
+    .week-box .val { font-size: 2rem; font-weight: 700; }
+    .week-box .lbl { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎯 Job Hunter</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/stats">Stats</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h2>Overview</h2>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="value"><%= stats.total %></div>
+        <div class="label">Total Scraped</div>
+      </div>
+      <div class="kpi">
+        <div class="value"><%= stats.byStatus['applied'] || 0 %></div>
+        <div class="label">Applied</div>
+      </div>
+      <div class="kpi">
+        <div class="value"><%= stats.byStatus['interview'] || 0 %></div>
+        <div class="label">Interviews</div>
+      </div>
+      <div class="kpi">
+        <div class="value"><%= stats.byStatus['offer'] || 0 %></div>
+        <div class="label">Offers</div>
+      </div>
+      <div class="kpi">
+        <div class="value" style="color: #22c55e;"><%= stats.responseRate %>%</div>
+        <div class="label">Response Rate</div>
+        <div class="response-rate-sub">interviews / applied</div>
+      </div>
+    </div>
+
+    <h2>This Week vs Last Week</h2>
+    <div class="week-compare">
+      <div class="week-box">
+        <div class="val" style="color: #60a5fa;"><%= stats.thisWeek %></div>
+        <div class="lbl">This Week</div>
+      </div>
+      <div class="week-box">
+        <div class="val" style="color: #94a3b8;"><%= stats.lastWeek %></div>
+        <div class="lbl">Last Week</div>
+      </div>
+    </div>
+
+    <h2>By Status</h2>
+    <div class="bar-list">
+      <%
+        const statusOrder = ['new', 'saved', 'applied', 'interview', 'rejected', 'offer'];
+        const maxStatus = Math.max(...statusOrder.map(s => stats.byStatus[s] || 0), 1);
+        statusOrder.forEach(function(s) {
+          const count = stats.byStatus[s] || 0;
+          const pct = Math.round((count / maxStatus) * 100);
+          const color = statusColors[s];
+      %>
+      <div class="bar-item">
+        <div class="bar-label">
+          <span><%= s.charAt(0).toUpperCase() + s.slice(1) %></span>
+          <span><%= count %></span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: <%= pct %>%; background: <%= color %>;"></div>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+
+    <h2>By Source</h2>
+    <div class="bar-list">
+      <%
+        const sources = Object.entries(stats.bySource).sort((a, b) => b[1] - a[1]);
+        const maxSource = Math.max(...sources.map(([, v]) => v), 1);
+        sources.forEach(function([source, count]) {
+          const pct = Math.round((count / maxSource) * 100);
+      %>
+      <div class="bar-item">
+        <div class="bar-label">
+          <span><%= source.toUpperCase() %></span>
+          <span><%= count %></span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: <%= pct %>%; background: #3b82f6;"></div>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+</body>
+</html>
