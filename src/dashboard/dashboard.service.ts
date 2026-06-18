@@ -34,6 +34,17 @@ export class DashboardService {
     return { jobs, total };
   }
 
+  async getStatusCounts(): Promise<Record<string, number>> {
+    const repo = AppDataSource.getRepository(Job);
+    const raw = await repo
+      .createQueryBuilder('job')
+      .select('job.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('job.status')
+      .getRawMany<{ status: string; count: string }>();
+    return Object.fromEntries(raw.map((r) => [r.status, parseInt(r.count)]));
+  }
+
   async updateJobStatus(jobId: number, status: JobStatus): Promise<Job | null> {
     const repo = AppDataSource.getRepository(Job);
     const job = await repo.findOneBy({ id: jobId });

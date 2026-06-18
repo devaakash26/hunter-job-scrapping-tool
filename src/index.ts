@@ -56,7 +56,7 @@ app.post('/trigger', async (req: Request, res: Response): Promise<void> => {
 
 async function bootstrap(): Promise<void> {
   await initializeDatabase();
-  const port = config.dashboard.port;
+  const port = parseInt(process.env.SCRAPER_PORT ?? '4000');
   app.listen(port, () => {
     console.log(`[${new Date().toISOString()}] [SERVER] Scraper server running on port ${port}`);
   });

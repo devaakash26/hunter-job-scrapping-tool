@@ -10,7 +10,7 @@ export const DASHBOARD = {
     rejected: '#ef4444',
     offer: '#22c55e',
   },
-  ITEMS_PER_PAGE: 50,
+  ITEMS_PER_PAGE: 20,
 } as const;
 
 export const VIEWS = {

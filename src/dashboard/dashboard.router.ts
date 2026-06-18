@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { DashboardService } from './dashboard.service';
+import { ScraperService } from '../services/scraper.service';
 import { DASHBOARD, VIEWS, PLATFORMS, PLATFORM_COLORS } from '../constants';
 import { JobStatus, JobFilters, JobUpdatePayload } from '../types';
 import { requireAuth, handleLogin, handleLogout } from '../middleware/auth';
 
 const router = Router();
 const dashboardService = new DashboardService();
+const scraperService = new ScraperService();
 
 // ── Auth routes (no requireAuth guard) ──────────────────────────
 router.get('/login', (req: Request, res: Response): void => {
@@ -36,7 +38,10 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       page: parseInt((req.query.page as string) || '1'),
     };
 
-    const { jobs, total } = await dashboardService.getJobs(filters);
+    const [{ jobs, total }, statusCounts] = await Promise.all([
+      dashboardService.getJobs(filters),
+      dashboardService.getStatusCounts(),
+    ]);
     const sources = Object.values(PLATFORMS);
 
     res.render(VIEWS.INDEX, {
@@ -44,6 +49,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       total,
       filters,
       sources,
+      statusCounts,
       platformColors: PLATFORM_COLORS,
       currentPage: filters.page ?? 1,
       totalPages: Math.ceil(total / DASHBOARD.ITEMS_PER_PAGE),
@@ -81,6 +87,27 @@ router.post('/update-status', async (req: Request, res: Response): Promise<void>
   }
 });
 
+router.get('/api/jobs', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const filters: JobFilters = {
+      status: (req.query.status as JobStatus | 'all') || 'all',
+      search: (req.query.search as string) || '',
+      source: (req.query.source as string) || '',
+      page: parseInt((req.query.page as string) || '1'),
+    };
+    const { jobs, total } = await dashboardService.getJobs(filters);
+    res.json({
+      jobs,
+      total,
+      page: filters.page,
+      totalPages: Math.ceil(total / DASHBOARD.ITEMS_PER_PAGE),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Server error';
+    res.status(500).json({ error: message });
+  }
+});
+
 router.get('/stats', async (_req: Request, res: Response): Promise<void> => {
   try {
     const stats = await dashboardService.getStats();
@@ -93,6 +120,17 @@ router.get('/stats', async (_req: Request, res: Response): Promise<void> => {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).send(`<pre>Error: ${message}</pre>`);
   }
+});
+
+router.post('/run-scraper', (_req: Request, res: Response): void => {
+  res.json({ message: '🔄 Scraper started in background' });
+  setImmediate(async () => {
+    try {
+      await scraperService.runPipeline();
+    } catch (err) {
+      console.error(`[${new Date().toISOString()}] [RUN-SCRAPER] Error:`, err);
+    }
+  });
 });
 
 export { router as dashboardRouter };

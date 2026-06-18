@@ -3,273 +3,712 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Job Hunter Dashboard</title>
+  <title>Job Hunter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0a0f1e; --surface: #111827; --surface2: #1f2937;
-      --border: #1f2937; --border2: #374151;
-      --text: #f9fafb; --muted: #6b7280; --accent: #6366f1;
+      --bg:       #f0f2f5;
+      --surface:  #ffffff;
+      --border:   #e5e7eb;
+      --border2:  #d1d5db;
+      --text:     #111827;
+      --muted:    #6b7280;
+      --faint:    #9ca3af;
+      --accent:   #4f46e5;
+      --accent2:  #7c3aed;
+      --orange:   #f97316;
+      --green:    #059669;
+      --sidebar-w: 256px;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-    /* ── Top Bar ── */
-    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    .logo { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .nav-links { display: flex; align-items: center; gap: 6px; }
-    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.85rem; padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
-    .nav-links a:hover, .nav-links a.active { background: var(--surface2); color: var(--text); }
-    .nav-links .logout { color: #f87171; }
-    .total-badge { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+    /* ────────────────────── SIDEBAR ────────────────────── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; z-index: 200;
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    }
+    .sidebar-logo {
+      padding: 22px 20px 18px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-mark {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; box-shadow: 0 4px 10px rgba(99,102,241,0.3);
+    }
+    .logo-text { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; line-height: 1.2; }
+    .logo-sub  { font-size: 10px; color: var(--faint); font-weight: 400; }
 
-    /* ── Filters Bar ── */
-    .filters-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .status-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-    .tab { padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; text-decoration: none; border: 1px solid var(--border2); color: var(--muted); transition: all 0.15s; white-space: nowrap; }
-    .tab:hover { background: var(--surface2); color: var(--text); }
-    .tab.active { color: #fff; border-color: transparent; }
-    .search-row { display: flex; gap: 8px; flex: 1; min-width: 260px; }
-    .search-row input, .search-row select { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 12px; color: var(--text); font-size: 0.85rem; outline: none; }
-    .search-row input { flex: 1; }
-    .search-row input:focus, .search-row select:focus { border-color: var(--accent); }
-    .search-row input::placeholder { color: var(--muted); }
-    .search-row select option { background: #1f2937; }
-    .btn-search { background: var(--accent); border: none; border-radius: 8px; padding: 7px 16px; color: #fff; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-    .btn-search:hover { background: #4f46e5; }
+    /* nav */
+    .sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 9px; font-weight: 700; color: var(--faint);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      padding: 12px 10px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 10px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      text-decoration: none; margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-item:hover { background: #f9fafb; color: var(--text); }
+    .nav-item.active { background: rgba(79,70,229,0.08); color: var(--accent); font-weight: 600; }
+    .nav-item.active .nav-icon { opacity: 1; }
+    .nav-icon { width: 18px; text-align: center; font-size: 14px; opacity: 0.6; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; font-size: 10px; font-weight: 700;
+      padding: 1px 7px; border-radius: 99px;
+      background: rgba(79,70,229,0.1); color: var(--accent);
+    }
+    .nav-item.active .nav-badge { background: var(--accent); color: #fff; }
 
-    /* ── Cards Grid ── */
-    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-    .empty-state { grid-column: 1/-1; text-align: center; padding: 80px 0; color: var(--muted); }
-    .empty-state span { font-size: 3rem; display: block; margin-bottom: 12px; }
+    .sidebar-footer { padding: 12px 10px 16px; border-top: 1px solid var(--border); }
 
-    /* ── Job Card ── */
+    /* ────────────────────── MAIN ────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    /* topbar */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 28px; height: 60px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: 6px; border-radius: 8px; color: var(--muted);
+    }
+    .hamburger:hover { background: var(--bg); }
+    .search-wrap {
+      flex: 1; max-width: 560px;
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-wrap:focus-within {
+      border-color: rgba(79,70,229,0.4);
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.06);
+    }
+    .search-wrap svg { color: var(--faint); flex-shrink: 0; }
+    .search-wrap input {
+      flex: 1; background: none; border: none; outline: none;
+      font-size: 13px; font-family: inherit; color: var(--text);
+    }
+    .search-wrap input::placeholder { color: var(--faint); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .btn-outline {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 9px; font-size: 12px;
+      font-weight: 600; font-family: inherit; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--muted); text-decoration: none; transition: all 0.15s;
+    }
+    .btn-outline:hover { border-color: var(--border2); color: var(--text); }
+    .btn-primary {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 9px; font-size: 12px;
+      font-weight: 700; font-family: inherit; cursor: pointer;
+      border: none; background: var(--accent); color: #fff;
+      text-decoration: none; transition: opacity 0.15s;
+      box-shadow: 0 2px 8px rgba(79,70,229,0.25);
+    }
+    .btn-primary:hover { opacity: 0.88; }
+
+    /* content */
+    .content { padding: 28px 28px 60px; }
+
+    /* hero */
+    .hero-card {
+      background: linear-gradient(120deg, #312e81 0%, #4f46e5 45%, #7c3aed 100%);
+      border-radius: 18px; padding: 28px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px; overflow: hidden; position: relative;
+    }
+    .hero-card::after {
+      content: ''; position: absolute; right: -40px; top: -60px;
+      width: 260px; height: 260px; border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .hero-date { font-size: 12px; color: rgba(255,255,255,0.55); font-weight: 500; margin-bottom: 6px; }
+    .hero-greeting { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: -0.03em; }
+    .hero-sub { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+    .hero-stats { display: flex; gap: 20px; position: relative; z-index: 1; }
+    .hero-stat { text-align: right; }
+    .hero-stat-val { font-size: 28px; font-weight: 900; color: #fff; line-height: 1; }
+    .hero-stat-label { font-size: 10px; color: rgba(255,255,255,0.45); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+
+    /* filter row */
+    .filter-row {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .jobs-count { font-size: 13px; font-weight: 600; color: var(--text); }
+    .jobs-count span { color: var(--muted); font-weight: 400; }
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--muted); cursor: pointer; text-decoration: none; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--border2); color: var(--text); }
+    .chip.active { background: rgba(79,70,229,0.08); border-color: rgba(79,70,229,0.25); color: var(--accent); }
+    .select-sort {
+      font-size: 12px; font-family: inherit; font-weight: 600;
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 6px 28px 6px 10px; background: var(--surface); color: var(--text);
+      appearance: none; cursor: pointer; outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+
+    /* ── CARDS GRID ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 14px;
+    }
+
     .job-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 0;
+      cursor: pointer;
+      transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+      animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
     }
-    .job-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-    .job-card.status-new     { border-left: 3px solid #3b82f6; }
-    .job-card.status-saved   { border-left: 3px solid #8b5cf6; }
-    .job-card.status-applied { border-left: 3px solid #f59e0b; }
-    .job-card.status-interview { border-left: 3px solid #10b981; }
-    .job-card.status-rejected { border-left: 3px solid #ef4444; }
-    .job-card.status-offer   { border-left: 3px solid #22c55e; }
+    .job-card:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      border-color: var(--border2);
+      transform: translateY(-2px);
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(16px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
 
-    /* Card header */
-    .card-top { display: flex; align-items: flex-start; gap: 12px; }
-    .company-avatar {
-      width: 40px; height: 40px; border-radius: 10px;
+    /* card header */
+    .card-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+    .co-logo {
+      width: 52px; height: 52px; border-radius: 13px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; font-weight: 800; color: #fff; flex-shrink: 0;
+      font-size: 18px; font-weight: 900; border: 1px solid;
     }
-    .card-meta { flex: 1; min-width: 0; }
-    .company-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .company-name { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
-    .source-badge {
-      font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;
-      color: #fff; text-transform: uppercase; letter-spacing: 0.04em;
+    .card-info { flex: 1; min-width: 0; }
+    .card-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 3px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-sub { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    .dot { width: 3px; height: 3px; background: var(--faint); border-radius: 50%; }
+
+    .bookmark-btn {
+      background: none; border: none; cursor: pointer; padding: 4px;
+      color: var(--faint); border-radius: 8px; flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
     }
-    .badge-easy { background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-    .badge-yc   { background: rgba(249,115,22,0.2); color: #f97316; border: 1px solid rgba(249,115,22,0.3); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-    .job-title { font-size: 1rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+    .bookmark-btn:hover { background: #fef3c7; color: var(--orange); }
+    .bookmark-btn.saved { color: var(--orange); }
 
-    /* Card body */
-    .card-details { display: flex; flex-direction: column; gap: 5px; }
-    .detail-row { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); }
-    .detail-row .val { color: #d1d5db; }
-    .salary-val { color: #4ade80 !important; font-weight: 600; }
-
-    /* Tags */
-    .tags { display: flex; flex-wrap: wrap; gap: 5px; }
-    .tag { background: var(--surface2); border: 1px solid var(--border2); color: #9ca3af; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; }
-
-    /* Card footer */
-    .card-footer { display: flex; align-items: center; gap: 8px; margin-top: auto; }
-    .status-select {
-      background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px;
-      padding: 5px 8px; color: var(--text); font-size: 0.78rem; cursor: pointer; flex: 1; outline: none;
+    /* tags */
+    .card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .card-tag {
+      font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 6px;
+      background: #f9fafb; border: 1px solid #e5e7eb; color: #4b5563;
+      white-space: nowrap;
     }
-    .status-select:focus { border-color: var(--accent); }
+
+    /* early badge */
+    .early-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: var(--orange); margin-bottom: 12px;
+    }
+
+    /* card footer */
+    .card-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 12px; border-top: 1px solid #f3f4f6; margin-top: auto;
+      gap: 8px;
+    }
+    .card-time { font-size: 11px; color: var(--faint); }
+    .card-salary { font-size: 13px; font-weight: 800; color: var(--text); }
+    .card-salary.has-salary { color: var(--green); }
     .apply-btn {
-      background: var(--accent); color: #fff; text-decoration: none;
-      font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 6px;
-      white-space: nowrap; transition: background 0.15s;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 700;
+      background: var(--accent); color: #fff; border: none; cursor: pointer; font-family: inherit;
+      box-shadow: 0 2px 6px rgba(79,70,229,0.25); transition: opacity 0.15s;
+      text-decoration: none;
     }
-    .apply-btn:hover { background: #4f46e5; }
-    .posted-date { font-size: 0.72rem; color: var(--muted); }
+    .apply-btn:hover { opacity: 0.88; }
+    .apply-btn.applied { background: #d1fae5; color: #065f46; box-shadow: none; }
 
-    /* Pagination */
-    .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 32px; flex-wrap: wrap; }
-    .page-btn { background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--muted); text-decoration: none; font-size: 0.82rem; transition: all 0.15s; }
-    .page-btn:hover, .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    /* status strip */
+    .card-status-strip {
+      height: 3px; border-radius: 0 0 16px 16px;
+      margin: 12px -20px -20px; opacity: 0.7;
+    }
 
-    /* Toast */
-    #toast { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none; z-index: 999; }
+    /* empty */
+    .empty-state {
+      grid-column: 1/-1; text-align: center; padding: 80px 24px;
+      background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+    }
+    .empty-state div { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; color: var(--muted); }
+
+    /* scroll sentinel */
+    #scroll-sentinel { padding: 24px; text-align: center; }
+    .spinner {
+      display: inline-block; width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid #e5e7eb; border-top-color: var(--accent);
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* toast */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      padding: 12px 18px; border-radius: 12px; font-size: 13px; font-weight: 600;
+      color: #fff; pointer-events: none; opacity: 0; transform: translateY(12px);
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
     #toast.show { opacity: 1; transform: translateY(0); }
-    #toast.error { background: #ef4444; }
+
+    /* overlay (mobile) */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+      z-index: 199; backdrop-filter: blur(2px);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .hamburger { display: flex; }
+      .hero-stats { display: none; }
+      .hero-card { padding: 22px 20px; }
+      .hero-greeting { font-size: 20px; }
+      .content { padding: 16px 16px 60px; }
+      .topbar { padding: 0 16px; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .sidebar-overlay.open { display: block; }
+    }
+    @media (max-width: 480px) {
+      .filter-chips { display: none; }
+    }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">🎯 Job Hunter</div>
-  <nav class="nav-links">
-    <a href="/" class="active">Dashboard <span class="total-badge"><%= total %></span></a>
-    <a href="/stats">Stats</a>
-    <a href="/logout" class="logout">Logout</a>
-  </nav>
-</header>
+<!-- Sidebar overlay (mobile tap-to-close) -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
 
-<div class="filters-wrap">
-  <div class="status-tabs">
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">🎯</div>
+    <div>
+      <div class="logo-text">Job Hunter</div>
+      <div class="logo-sub">personal dashboard</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Browse</div>
+
     <%
-      const STATUS_META = {
-        all:       { label: 'All',       color: '#6366f1' },
-        new:       { label: 'New',       color: '#3b82f6' },
-        saved:     { label: 'Saved',     color: '#8b5cf6' },
-        applied:   { label: 'Applied',   color: '#f59e0b' },
-        interview: { label: 'Interview', color: '#10b981' },
-        rejected:  { label: 'Rejected',  color: '#ef4444' },
-        offer:     { label: 'Offer',     color: '#22c55e' },
-      };
-      Object.entries(STATUS_META).forEach(([key, meta]) => {
+      const NAV = [
+        { key:'all',       label:'All Jobs',    icon:'🏠', href:'/?status=all' },
+        { key:'new',       label:'New',          icon:'✨', href:'/?status=new' },
+        { key:'saved',     label:'Saved',        icon:'🔖', href:'/?status=saved' },
+        { key:'applied',   label:'Applied',      icon:'📤', href:'/?status=applied' },
+        { key:'interview', label:'Interviews',   icon:'🤝', href:'/?status=interview' },
+        { key:'offer',     label:'Offers',       icon:'🏆', href:'/?status=offer' },
+        { key:'rejected',  label:'Rejected',     icon:'❌', href:'/?status=rejected' },
+      ];
+      NAV.forEach(function(n) {
+        const cnt = n.key === 'all' ? total : (statusCounts[n.key] || 0);
+        const active = filters.status === n.key;
     %>
-      <a href="/?status=<%= key %>&search=<%= filters.search %>&source=<%= filters.source %>"
-         class="tab <%= filters.status === key ? 'active' : '' %>"
-         style="<%= filters.status === key ? 'background:' + meta.color + ';border-color:' + meta.color : '' %>">
-        <%= meta.label %>
+      <a href="<%= n.href %>&search=<%= encodeURIComponent(filters.search) %>&source=<%= filters.source %>"
+         class="nav-item <%= active ? 'active' : '' %>">
+        <span class="nav-icon"><%= n.icon %></span>
+        <%= n.label %>
+        <% if (cnt > 0) { %><span class="nav-badge"><%= cnt %></span><% } %>
       </a>
     <% }); %>
+
+    <div class="nav-section-label" style="margin-top:8px;">Manage</div>
+    <a href="/stats" class="nav-item">
+      <span class="nav-icon">📊</span> Stats
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="/logout" class="nav-item" style="color:#ef4444;">
+      <span class="nav-icon">🚪</span> Logout
+    </a>
   </div>
-  <form class="search-row" method="get">
-    <input type="hidden" name="status" value="<%= filters.status %>">
-    <input type="text" name="search" placeholder="Search title or company…" value="<%= filters.search %>">
-    <select name="source">
-      <option value="">All sources</option>
-      <% sources.forEach(function(s) { %>
-        <option value="<%= s %>" <%= filters.source === s ? 'selected' : '' %>><%= s.toUpperCase() %></option>
-      <% }); %>
-    </select>
-    <button class="btn-search" type="submit">Search</button>
-  </form>
-</div>
+</aside>
 
-<div class="container">
-  <div class="cards-grid">
-    <% if (jobs.length === 0) { %>
-      <div class="empty-state">
-        <span>🔍</span>
-        No jobs found. Run the scraper or try different filters.
-      </div>
-    <% } %>
+<!-- ══════════════ MAIN ══════════════ -->
+<div class="main">
 
-    <% jobs.forEach(function(job) {
-      const colorMap = platformColors;
-      const bgColor = colorMap[job.source] || '#6366f1';
-      const initial = job.company.charAt(0).toUpperCase();
-      const tagList = job.tags ? job.tags.split(',').slice(0, 4) : [];
-    %>
-    <div class="job-card status-<%= job.status %>" data-id="<%= job.id %>">
+  <!-- Top bar -->
+  <div class="topbar">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
 
-      <div class="card-top">
-        <div class="company-avatar" style="background: <%= bgColor %>22; color: <%= bgColor %>; border: 1px solid <%= bgColor %>44;">
-          <%= initial %>
+    <form class="search-wrap" method="get" action="/" style="flex:1;max-width:520px;">
+      <input type="hidden" name="status" value="<%= filters.status %>">
+      <input type="hidden" name="source" value="<%= filters.source %>">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="text" name="search" placeholder="Search jobs, companies…" value="<%= filters.search %>">
+    </form>
+
+    <div class="topbar-right">
+      <form method="get" action="/run-scraper" style="display:inline;">
+        <button type="button" class="btn-primary" onclick="runScraper(this)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Run Scraper
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Hero banner -->
+    <div class="hero-card">
+      <div>
+        <div class="hero-date">
+          ☀️ <%= new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'}) %>
         </div>
-        <div class="card-meta">
-          <div class="company-row">
-            <span class="company-name"><%= job.company %></span>
-            <span class="source-badge" style="background:<%= bgColor %>33; color:<%= bgColor %>; border:1px solid <%= bgColor %>55;">
-              <%= job.source.toUpperCase() %>
-            </span>
-            <% if (job.easyApply) { %><span class="badge-easy">⚡ Easy</span><% } %>
-            <% if (job.ycBatch) { %><span class="badge-yc">🚀 YC</span><% } %>
-          </div>
+        <div class="hero-greeting">Hi, Aakash! 👋</div>
+        <div class="hero-sub">You have <%= statusCounts.new || 0 %> new jobs waiting to be reviewed.</div>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-val"><%= total %></div>
+          <div class="hero-stat-label">Total Jobs</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val"><%= statusCounts.applied || 0 %></div>
+          <div class="hero-stat-label">Applied</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val"><%= statusCounts.interview || 0 %></div>
+          <div class="hero-stat-label">Interviews</div>
         </div>
       </div>
+    </div>
 
-      <div class="job-title"><%= job.title %></div>
+    <!-- Filter row -->
+    <div class="filter-row">
+      <span class="jobs-count"><%= total %> <span>Jobs Found</span></span>
 
-      <div class="card-details">
-        <div class="detail-row">📍 <span class="val"><%= job.location || 'Not specified' %></span></div>
-        <div class="detail-row">💰 <span class="val salary-val"><%= job.salary %></span></div>
-        <% if (job.postedAt) { %>
-          <div class="detail-row">🕐 <span class="val"><%= job.postedAt %></span></div>
-        <% } %>
-      </div>
-
-      <% if (tagList.length > 0) { %>
-      <div class="tags">
-        <% tagList.forEach(function(tag) { %>
-          <span class="tag"><%= tag.trim() %></span>
+      <!-- Source chips -->
+      <div class="filter-chips">
+        <a href="/?status=<%= filters.status %>&search=<%= encodeURIComponent(filters.search) %>&source="
+           class="chip <%= !filters.source ? 'active' : '' %>">All</a>
+        <% sources.slice(0,8).forEach(function(s) { %>
+          <a href="/?status=<%= filters.status %>&search=<%= encodeURIComponent(filters.search) %>&source=<%= s %>"
+             class="chip <%= filters.source === s ? 'active' : '' %>"><%= s.toUpperCase() %></a>
         <% }); %>
+      </div>
+
+      <select class="select-sort" onchange="window.location='/?status=<%= filters.status %>&search=<%= encodeURIComponent(filters.search) %>&source=<%= filters.source %>&sort='+this.value">
+        <option value="newest">Newest Post</option>
+        <option value="salary">Top Salary</option>
+      </select>
+    </div>
+
+    <!-- Cards grid (initial SSR load) -->
+    <div class="cards-grid" id="jobs-grid">
+      <% if (jobs.length === 0) { %>
+      <div class="empty-state">
+        <div>🔍</div>
+        <p>No jobs found. Adjust filters or click <strong>Run Scraper</strong> to fetch new jobs.</p>
       </div>
       <% } %>
 
-      <div class="card-footer">
-        <select class="status-select" onchange="updateStatus(<%= job.id %>, this.value)">
-          <% ['new','saved','applied','interview','rejected','offer'].forEach(function(s) { %>
-            <option value="<%= s %>" <%= job.status === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
-          <% }); %>
-        </select>
-        <a class="apply-btn" href="<%= job.url %>" target="_blank" rel="noopener">Apply →</a>
+      <% jobs.forEach(function(job) {
+        const color = platformColors[job.source] || '#6366f1';
+        const initial = (job.company || '?').charAt(0).toUpperCase();
+        const tags = job.tags ? job.tags.split(',').filter(Boolean).slice(0, 4) : [];
+        const isNew = job.status === 'new';
+        const isSaved = job.status === 'saved';
+        const isApplied = job.status === 'applied';
+        const hasSalary = job.salary && job.salary !== 'Not mentioned';
+        const statusColors = { new:'#3b82f6', saved:'#8b5cf6', applied:'#f59e0b', interview:'#10b981', rejected:'#ef4444', offer:'#22c55e' };
+        const stripColor = statusColors[job.status] || '#e5e7eb';
+      %>
+      <div class="job-card" data-id="<%= job.id %>" data-status="<%= job.status %>">
+        <div class="card-head">
+          <div class="co-logo" style="background:<%= color %>12;color:<%= color %>;border-color:<%= color %>25;">
+            <%= initial %>
+          </div>
+          <div class="card-info">
+            <div class="card-title"><%= job.title %></div>
+            <div class="card-sub">
+              <span><%= job.company %></span>
+              <span class="dot"></span>
+              <span><%= job.location || 'India' %></span>
+            </div>
+          </div>
+          <button class="bookmark-btn <%= isSaved ? 'saved' : '' %>"
+                  onclick="toggleSave(event, <%= job.id %>, '<%= job.status %>')"
+                  title="<%= isSaved ? 'Remove from saved' : 'Save job' %>">
+            <svg width="16" height="16" fill="<%= isSaved ? 'currentColor' : 'none' %>" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+            </svg>
+          </button>
+        </div>
+
+        <% if (tags.length > 0) { %>
+        <div class="card-tags">
+          <% tags.forEach(function(t) { %><span class="card-tag"><%= t.trim() %></span><% }); %>
+          <% if (job.source) { %>
+            <span class="card-tag" style="background:<%= color %>10;border-color:<%= color %>25;color:<%= color %>;"><%= job.source.toUpperCase() %></span>
+          <% } %>
+        </div>
+        <% } %>
+
+        <% if (isNew || job.easyApply) { %>
+        <div class="early-badge">
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <%= job.easyApply ? 'Easy Apply' : 'Be an early applicant' %>
+        </div>
+        <% } %>
+        <% if (job.ycBatch) { %>
+        <div class="early-badge" style="color:#f97316;">🚀 YC <%= job.ycBatch %></div>
+        <% } %>
+
+        <div class="card-foot">
+          <span class="card-time"><%= job.postedAt || '—' %></span>
+          <span class="card-salary <%= hasSalary ? 'has-salary' : '' %>"><%= job.salary %></span>
+          <button class="apply-btn <%= isApplied ? 'applied' : '' %>"
+                  onclick="applyJob(event, <%= job.id %>, '<%= job.url %>')">
+            <%= isApplied ? '✓ Applied' : 'Apply →' %>
+          </button>
+        </div>
+
+        <div class="card-status-strip" style="background:<%= stripColor %>;"></div>
       </div>
-
+      <% }); %>
     </div>
-    <% }); %>
-  </div>
 
-  <% if (totalPages > 1) { %>
-  <div class="pagination">
-    <% if (currentPage > 1) { %>
-      <a class="page-btn" href="/?status=<%= filters.status %>&search=<%= filters.search %>&source=<%= filters.source %>&page=<%= currentPage - 1 %>">← Prev</a>
+    <!-- Infinite scroll sentinel -->
+    <div id="scroll-sentinel" style="<%= currentPage >= totalPages ? 'display:none' : '' %>">
+      <div class="spinner"></div>
+    </div>
+    <% if (currentPage >= totalPages && jobs.length > 0) { %>
+    <p style="text-align:center;color:var(--faint);font-size:12px;padding:24px 0;">✓ You've seen all <%= total %> jobs</p>
     <% } %>
-    <% for (let i = Math.max(1, currentPage - 3); i <= Math.min(totalPages, currentPage + 3); i++) { %>
-      <a class="page-btn <%= i === currentPage ? 'active' : '' %>"
-         href="/?status=<%= filters.status %>&search=<%= filters.search %>&source=<%= filters.source %>&page=<%= i %>"><%= i %></a>
-    <% } %>
-    <% if (currentPage < totalPages) { %>
-      <a class="page-btn" href="/?status=<%= filters.status %>&search=<%= filters.search %>&source=<%= filters.source %>&page=<%= currentPage + 1 %>">Next →</a>
-    <% } %>
+
   </div>
-  <% } %>
 </div>
 
+<!-- Toast -->
 <div id="toast"></div>
 
 <script>
-  async function updateStatus(jobId, status) {
+  // ── Platform colors (for JS-rendered cards) ──
+  const PLATFORM_COLORS = <%- JSON.stringify(platformColors) %>;
+  const STATUS_COLORS = { new:'#3b82f6', saved:'#8b5cf6', applied:'#f59e0b', interview:'#10b981', rejected:'#ef4444', offer:'#22c55e' };
+  const FILTERS = {
+    status: '<%= filters.status %>',
+    search: '<%= encodeURIComponent(filters.search) %>',
+    source: '<%= filters.source %>',
+  };
+
+  // ── Infinite scroll ──
+  let page = <%= currentPage %>;
+  const totalPages = <%= totalPages %>;
+  let loading = false;
+
+  const sentinel = document.getElementById('scroll-sentinel');
+  const grid = document.getElementById('jobs-grid');
+
+  const io = new IntersectionObserver(async (entries) => {
+    if (!entries[0].isIntersecting || loading || page >= totalPages) return;
+    loading = true;
+    page++;
+
     try {
-      const res = await fetch('/update-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, status })
-      });
+      const qs = new URLSearchParams({ page, status: FILTERS.status, search: decodeURIComponent(FILTERS.search), source: FILTERS.source });
+      const res = await fetch(`/api/jobs?${qs}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Update failed');
-      // Update card border colour without page reload
-      const card = document.querySelector(`[data-id="${jobId}"]`);
-      if (card) {
-        card.className = card.className.replace(/status-\w+/, `status-${status}`);
+
+      data.jobs.forEach(job => {
+        const el = document.createElement('div');
+        el.innerHTML = renderCard(job);
+        grid.appendChild(el.firstElementChild);
+      });
+
+      if (page >= data.totalPages) {
+        sentinel.style.display = 'none';
+        const msg = document.createElement('p');
+        msg.style.cssText = 'text-align:center;color:#9ca3af;font-size:12px;padding:24px 0;';
+        msg.textContent = `✓ You've seen all ${data.total} jobs`;
+        sentinel.insertAdjacentElement('afterend', msg);
+        io.disconnect();
       }
-      showToast('Status updated ✓');
-    } catch (e) {
-      showToast(e.message, true);
+    } catch(e) { console.error(e); }
+    loading = false;
+  }, { rootMargin: '200px' });
+
+  if (sentinel) io.observe(sentinel);
+
+  function renderCard(job) {
+    const color = PLATFORM_COLORS[job.source] || '#6366f1';
+    const initial = (job.company || '?').charAt(0).toUpperCase();
+    const tags = job.tags ? job.tags.split(',').filter(Boolean).slice(0,4) : [];
+    const isSaved = job.status === 'saved';
+    const isApplied = job.status === 'applied';
+    const isNew = job.status === 'new';
+    const hasSalary = job.salary && job.salary !== 'Not mentioned';
+    const strip = STATUS_COLORS[job.status] || '#e5e7eb';
+
+    const tagHTML = tags.map(t => `<span class="card-tag">${escHtml(t.trim())}</span>`).join('') +
+      (job.source ? `<span class="card-tag" style="background:${color}10;border-color:${color}25;color:${color};">${job.source.toUpperCase()}</span>` : '');
+
+    const earlyHTML = (isNew || job.easyApply)
+      ? `<div class="early-badge"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>${job.easyApply ? 'Easy Apply' : 'Be an early applicant'}</div>` : '';
+    const ycHTML = job.ycBatch ? `<div class="early-badge" style="color:#f97316;">🚀 YC ${job.ycBatch}</div>` : '';
+
+    return `<div class="job-card" data-id="${job.id}" data-status="${job.status}">
+      <div class="card-head">
+        <div class="co-logo" style="background:${color}12;color:${color};border-color:${color}25;">${initial}</div>
+        <div class="card-info">
+          <div class="card-title">${escHtml(job.title)}</div>
+          <div class="card-sub"><span>${escHtml(job.company)}</span><span class="dot"></span><span>${escHtml(job.location||'India')}</span></div>
+        </div>
+        <button class="bookmark-btn ${isSaved?'saved':''}" onclick="toggleSave(event,${job.id},'${job.status}')" title="${isSaved?'Remove from saved':'Save job'}">
+          <svg width="16" height="16" fill="${isSaved?'currentColor':'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+        </button>
+      </div>
+      ${tags.length ? `<div class="card-tags">${tagHTML}</div>` : ''}
+      ${earlyHTML}${ycHTML}
+      <div class="card-foot">
+        <span class="card-time">${escHtml(job.postedAt||'—')}</span>
+        <span class="card-salary ${hasSalary?'has-salary':''}">${escHtml(job.salary)}</span>
+        <button class="apply-btn ${isApplied?'applied':''}" onclick="applyJob(event,${job.id},'${escHtml(job.url)}')">${isApplied?'✓ Applied':'Apply →'}</button>
+      </div>
+      <div class="card-status-strip" style="background:${strip};opacity:0.7;"></div>
+    </div>`;
+  }
+
+  // ── Apply → open URL + auto-mark as applied ──
+  async function applyJob(e, jobId, url) {
+    e.stopPropagation();
+    window.open(url, '_blank', 'noopener,noreferrer');
+    const card = document.querySelector(`[data-id="${jobId}"]`);
+    if (card && card.dataset.status !== 'applied') {
+      await patchStatus(jobId, 'applied');
+      card.dataset.status = 'applied';
+      const btn = card.querySelector('.apply-btn');
+      if (btn) { btn.textContent = '✓ Applied'; btn.classList.add('applied'); }
+      updateStripColor(card, 'applied');
+      showToast('✓ Marked as Applied');
     }
   }
 
+  // ── Bookmark → toggle saved ──
+  async function toggleSave(e, jobId, currentStatus) {
+    e.stopPropagation();
+    const card = document.querySelector(`[data-id="${jobId}"]`);
+    const btn = e.currentTarget;
+    const newStatus = currentStatus === 'saved' ? 'new' : 'saved';
+    await patchStatus(jobId, newStatus);
+    card.dataset.status = newStatus;
+    btn.classList.toggle('saved', newStatus === 'saved');
+    btn.querySelector('svg').setAttribute('fill', newStatus === 'saved' ? 'currentColor' : 'none');
+    updateStripColor(card, newStatus);
+    showToast(newStatus === 'saved' ? '🔖 Saved' : 'Removed from saved');
+  }
+
+  function updateStripColor(card, status) {
+    const strip = card.querySelector('.card-status-strip');
+    if (strip) strip.style.background = STATUS_COLORS[status] || '#e5e7eb';
+  }
+
+  async function patchStatus(jobId, status) {
+    const res = await fetch('/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId, status })
+    });
+    if (!res.ok) throw new Error('Update failed');
+  }
+
+  // ── Run scraper ──
+  async function runScraper(btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Running…';
+    showToast('🔄 Scraper started…');
+    try {
+      const res = await fetch('/run-scraper', { method: 'POST' });
+      const data = await res.json();
+      showToast(data.message || '✓ Scraper triggered');
+    } catch(e) {
+      showToast('✕ Failed to start scraper', true);
+    }
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Run Scraper';
+    }, 3000);
+  }
+
+  // ── Mobile sidebar ──
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  // ── Toast ──
   function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = isError ? 'error' : '';
+    t.style.background = isError ? '#dc2626' : '#111827';
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 </script>
 </body>

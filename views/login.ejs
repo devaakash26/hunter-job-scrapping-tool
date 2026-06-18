@@ -4,130 +4,150 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — Job Hunter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0f1e;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #060912;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
     }
-    .bg-glow {
-      position: fixed; inset: 0; pointer-events: none;
-      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 70%);
+
+    /* Background blobs */
+    .blob {
+      position: fixed; pointer-events: none; border-radius: 50%;
+      filter: blur(100px); z-index: 0;
     }
+    .b1 { width: 600px; height: 500px; top: -200px; left: -100px; background: rgba(99,102,241,0.12); }
+    .b2 { width: 500px; height: 400px; bottom: -150px; right: -100px; background: rgba(139,92,246,0.09); }
+
+    /* Card */
     .card {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 16px;
-      padding: 48px 40px;
-      width: 100%;
-      max-width: 400px;
-      position: relative;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+      position: relative; z-index: 10;
+      width: 100%; max-width: 400px;
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 44px 40px 40px;
+      box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+      margin: 20px;
     }
-    .logo {
-      text-align: center;
-      margin-bottom: 32px;
-    }
+
+    /* Logo */
+    .logo-wrap { text-align: center; margin-bottom: 36px; }
     .logo-icon {
-      font-size: 2.5rem;
-      display: block;
-      margin-bottom: 12px;
+      width: 56px; height: 56px; border-radius: 16px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(99,102,241,0.4);
     }
-    .logo h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #f9fafb;
-      letter-spacing: -0.02em;
+    .logo-title {
+      font-size: 20px; font-weight: 900; color: #fff;
+      letter-spacing: -0.03em; margin-bottom: 4px;
     }
-    .logo p {
-      font-size: 0.85rem;
-      color: #6b7280;
-      margin-top: 4px;
-    }
-    .error-banner {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.3);
-      color: #fca5a5;
-      font-size: 0.85rem;
+    .logo-sub { font-size: 12px; color: rgba(255,255,255,0.3); font-weight: 400; }
+
+    /* Error */
+    .error-box {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px;
       padding: 10px 14px;
-      border-radius: 8px;
+      color: #fca5a5;
+      font-size: 12px;
+      font-weight: 500;
       margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
     }
-    .form-group { margin-bottom: 20px; }
-    label {
+
+    /* Form */
+    .field { margin-bottom: 16px; }
+    .field label {
       display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #9ca3af;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 8px;
+      font-size: 10px; font-weight: 700;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 7px;
     }
-    input {
+    .field input {
       width: 100%;
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 11px;
       padding: 12px 14px;
-      color: #f9fafb;
-      font-size: 0.95rem;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
       outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    input:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    .field input:focus {
+      border-color: rgba(99,102,241,0.5);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
     }
-    input::placeholder { color: #4b5563; }
-    button {
-      width: 100%;
-      background: #6366f1;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 13px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: background 0.15s, transform 0.1s;
+    .field input::placeholder { color: rgba(255,255,255,0.18); }
+
+    /* Submit */
+    .btn {
+      width: 100%; margin-top: 8px;
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      border: none; border-radius: 11px;
+      padding: 13px; color: #fff;
+      font-size: 14px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+      transition: opacity 0.15s, transform 0.1s;
     }
-    button:hover { background: #4f46e5; }
-    button:active { transform: scale(0.99); }
-    .footer { text-align: center; margin-top: 24px; font-size: 0.75rem; color: #374151; }
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.99); }
+
+    .footer { text-align: center; margin-top: 24px; font-size: 10px; color: rgba(255,255,255,0.12); }
   </style>
 </head>
 <body>
-  <div class="bg-glow"></div>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+
   <div class="card">
-    <div class="logo">
-      <span class="logo-icon">🎯</span>
-      <h1>Job Hunter</h1>
-      <p>Personal job tracking dashboard</p>
+    <div class="logo-wrap">
+      <div class="logo-icon">🎯</div>
+      <div class="logo-title">Job Hunter</div>
+      <div class="logo-sub">Personal job tracking dashboard</div>
     </div>
+
     <% if (typeof error !== 'undefined' && error) { %>
-      <div class="error-banner">⚠️ <%= error %></div>
+      <div class="error-box">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <%= error %>
+      </div>
     <% } %>
+
     <form method="POST" action="/login">
       <% if (typeof next !== 'undefined' && next) { %>
         <input type="hidden" name="next" value="<%= next %>">
       <% } %>
-      <div class="form-group">
+      <div class="field">
         <label for="username">Username</label>
         <input type="text" id="username" name="username" placeholder="Enter username" autocomplete="username" required>
       </div>
-      <div class="form-group">
+      <div class="field">
         <label for="password">Password</label>
         <input type="password" id="password" name="password" placeholder="Enter password" autocomplete="current-password" required>
       </div>
-      <button type="submit">Sign In →</button>
+      <button type="submit" class="btn">Sign in →</button>
     </form>
-    <div class="footer">Job Hunter v1.0</div>
+
+    <div class="footer">Job Hunter v2.0 · Personal use only</div>
   </div>
 </body>
 </html>

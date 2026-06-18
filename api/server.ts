@@ -26,5 +26,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     await initializeDatabase();
     dbReady = true;
   }
-  await new Promise<void>((resolve) => app(req as never, res as never, resolve));
+  await new Promise<void>((resolve) => app(req as never, res as never, () => resolve()));
+}
+
+// Local dev: `npm run dev:dashboard`
+if (!process.env.VERCEL) {
+  const PORT = parseInt(process.env.DASHBOARD_PORT ?? '3000');
+  initializeDatabase()
+    .then(() => {
+      app.listen(PORT, () =>
+        console.log(`[DEV] Dashboard running at http://localhost:${PORT}`),
+      );
+    })
+    .catch((err) => {
+      console.error('[DEV] DB init failed:', err);
+      process.exit(1);
+    });
 }
