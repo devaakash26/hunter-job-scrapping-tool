@@ -10,39 +10,86 @@ export const PLATFORMS = {
   MICROSOFT: 'microsoft',
   AMAZON: 'amazon',
   ORACLE: 'oracle',
-  // Indian startups
+  // Indian startups — Lever ATS
   SWIGGY: 'swiggy',
   RAZORPAY: 'razorpay',
   ZEPTO: 'zepto',
   MEESHO: 'meesho',
+  SCALER: 'scaler',
+  DREAM11: 'dream11',
+  URBANCOMPANY: 'urbancompany',
+  NYKAA: 'nykaa',
+  DUNZO: 'dunzo',
+  // Indian startups — Greenhouse ATS
   GROWW: 'groww',
   CRED: 'cred',
+  FRESHWORKS: 'freshworks',
+  BROWSERSTACK: 'browserstack',
+  CHARGEBEE: 'chargebee',
+  HASURA: 'hasura',
+  POSTMAN: 'postman',
+  SLICE: 'slice',
+  JUSPAY: 'juspay',
+  SHARECHAT: 'sharechat',
+  // Indian startups — SmartRecruiters ATS
+  INMOBI: 'inmobi',
+  MAKEMYTRIP: 'makemytrip',
+  // Indian startups — Playwright
   ZOMATO: 'zomato',
   BLINKIT: 'blinkit',
   PHONEPE: 'phonepe',
+  FLIPKART: 'flipkart',
+  PAYTM: 'paytm',
+  MYNTRA: 'myntra',
+  WALMART_TECH: 'walmart_tech',
 } as const;
 
 export type Platform = typeof PLATFORMS[keyof typeof PLATFORMS];
 
 export const PLATFORM_URLS = {
+  // Job boards
   [PLATFORMS.WELLFOUND]: 'https://wellfound.com/jobs?roles[]=full-stack-engineer&remote=true',
   [PLATFORMS.CUTSHORT]: 'https://cutshort.io/jobs',
   [PLATFORMS.INSTAHYRE]: 'https://www.instahyre.com/search-jobs/',
   [PLATFORMS.LINKEDIN]: 'https://www.linkedin.com/jobs/search/?keywords=SDE+full+stack&location=India&f_E=1%2C2&f_WT=2',
   [PLATFORMS.YC]: 'https://www.workatastartup.com/jobs?role=eng&subRole=full-stack&yoe_min=0&yoe_max=2&remote=true',
+  // Big 4
   [PLATFORMS.GOOGLE]: 'https://careers.google.com/jobs/results/?q=software+engineer&location=India',
   [PLATFORMS.MICROSOFT]: 'https://jobs.careers.microsoft.com/global/en/search?q=software+engineer+india&l=en_us',
   [PLATFORMS.AMAZON]: 'https://www.amazon.jobs/en/search?base_query=software+development+engineer&loc_query=India',
   [PLATFORMS.ORACLE]: 'https://careers.oracle.com/jobs/#en/sites/jobsearch/jobs?keyword=software+engineer&location=India',
+  // Lever ATS
   [PLATFORMS.SWIGGY]: 'https://careers.swiggy.com/',
   [PLATFORMS.RAZORPAY]: 'https://razorpay.com/jobs/',
   [PLATFORMS.ZEPTO]: 'https://jobs.lever.co/zepto',
   [PLATFORMS.MEESHO]: 'https://meesho.io/careers',
+  [PLATFORMS.SCALER]: 'https://jobs.lever.co/scaler-academy',
+  [PLATFORMS.DREAM11]: 'https://jobs.lever.co/dream11',
+  [PLATFORMS.URBANCOMPANY]: 'https://jobs.lever.co/urbancompany',
+  [PLATFORMS.NYKAA]: 'https://jobs.lever.co/nykaatech',
+  [PLATFORMS.DUNZO]: 'https://jobs.lever.co/dunzo',
+  // Greenhouse ATS
   [PLATFORMS.GROWW]: 'https://groww.in/careers',
   [PLATFORMS.CRED]: 'https://careers.cred.club/',
+  [PLATFORMS.FRESHWORKS]: 'https://boards.greenhouse.io/freshworks',
+  [PLATFORMS.BROWSERSTACK]: 'https://boards.greenhouse.io/browserstack',
+  [PLATFORMS.CHARGEBEE]: 'https://boards.greenhouse.io/chargebee',
+  [PLATFORMS.HASURA]: 'https://boards.greenhouse.io/hasura',
+  [PLATFORMS.POSTMAN]: 'https://boards.greenhouse.io/postmanlabs',
+  [PLATFORMS.SLICE]: 'https://boards.greenhouse.io/getslice',
+  [PLATFORMS.JUSPAY]: 'https://boards.greenhouse.io/juspay',
+  [PLATFORMS.SHARECHAT]: 'https://boards.greenhouse.io/sharechat',
+  // SmartRecruiters
+  [PLATFORMS.INMOBI]: 'https://jobs.smartrecruiters.com/InMobi',
+  [PLATFORMS.MAKEMYTRIP]: 'https://jobs.smartrecruiters.com/MakeMyTrip',
+  // Playwright
   [PLATFORMS.ZOMATO]: 'https://www.zomato.com/careers',
   [PLATFORMS.BLINKIT]: 'https://blinkit.com/careers',
   [PLATFORMS.PHONEPE]: 'https://www.phonepe.com/careers/',
+  [PLATFORMS.FLIPKART]: 'https://www.flipkartcareers.com/',
+  [PLATFORMS.PAYTM]: 'https://paytmjobs.com/',
+  [PLATFORMS.MYNTRA]: 'https://careers.myntra.com/',
+  [PLATFORMS.WALMART_TECH]: 'https://careers.walmart.com/results?q=software+engineer&locationCountry=IN',
 } as const;
 
 export const PLATFORM_COOKIE_PATHS = {
@@ -59,22 +106,47 @@ export const PLATFORM_LOGIN_URLS = {
 
 // Source badge colors for UI
 export const PLATFORM_COLORS: Record<string, string> = {
+  // Job boards
   [PLATFORMS.WELLFOUND]: '#f97316',
   [PLATFORMS.CUTSHORT]: '#8b5cf6',
   [PLATFORMS.INSTAHYRE]: '#06b6d4',
   [PLATFORMS.LINKEDIN]: '#0077b5',
   [PLATFORMS.YC]: '#f97316',
+  // Big 4
   [PLATFORMS.GOOGLE]: '#4285f4',
   [PLATFORMS.MICROSOFT]: '#00a4ef',
   [PLATFORMS.AMAZON]: '#ff9900',
   [PLATFORMS.ORACLE]: '#c74634',
+  // Lever
   [PLATFORMS.SWIGGY]: '#fc8019',
   [PLATFORMS.RAZORPAY]: '#2d81f7',
   [PLATFORMS.ZEPTO]: '#7c3aed',
   [PLATFORMS.MEESHO]: '#f43f5e',
+  [PLATFORMS.SCALER]: '#ff6b35',
+  [PLATFORMS.DREAM11]: '#1a73e8',
+  [PLATFORMS.URBANCOMPANY]: '#7b2ff7',
+  [PLATFORMS.NYKAA]: '#fc2779',
+  [PLATFORMS.DUNZO]: '#00b140',
+  // Greenhouse
   [PLATFORMS.GROWW]: '#00d09c',
   [PLATFORMS.CRED]: '#1a1a2e',
+  [PLATFORMS.FRESHWORKS]: '#25c16f',
+  [PLATFORMS.BROWSERSTACK]: '#e84c3d',
+  [PLATFORMS.CHARGEBEE]: '#ff7a59',
+  [PLATFORMS.HASURA]: '#1eb4d4',
+  [PLATFORMS.POSTMAN]: '#ff6c37',
+  [PLATFORMS.SLICE]: '#5a31e1',
+  [PLATFORMS.JUSPAY]: '#3d4eac',
+  [PLATFORMS.SHARECHAT]: '#f5a623',
+  // SmartRecruiters
+  [PLATFORMS.INMOBI]: '#ef5426',
+  [PLATFORMS.MAKEMYTRIP]: '#e8340b',
+  // Playwright
   [PLATFORMS.ZOMATO]: '#e23744',
   [PLATFORMS.BLINKIT]: '#f6c90e',
   [PLATFORMS.PHONEPE]: '#5f259f',
+  [PLATFORMS.FLIPKART]: '#2874f0',
+  [PLATFORMS.PAYTM]: '#00b9f1',
+  [PLATFORMS.MYNTRA]: '#ff3f6c',
+  [PLATFORMS.WALMART_TECH]: '#0071ce',
 };

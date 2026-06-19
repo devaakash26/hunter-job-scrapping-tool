@@ -32,6 +32,11 @@ const LEVER_COMPANIES: LeverCompanyConfig[] = [
   { slug: 'swiggy', displayName: 'Swiggy', platform: 'swiggy' },
   { slug: 'zepto', displayName: 'Zepto', platform: 'zepto' },
   { slug: 'meesho', displayName: 'Meesho', platform: 'meesho' },
+  { slug: 'scaler-academy', displayName: 'Scaler', platform: 'scaler' },
+  { slug: 'dream11', displayName: 'Dream11', platform: 'dream11' },
+  { slug: 'urbancompany', displayName: 'Urban Company', platform: 'urbancompany' },
+  { slug: 'nykaatech', displayName: 'Nykaa', platform: 'nykaa' },
+  { slug: 'dunzo', displayName: 'Dunzo', platform: 'dunzo' },
 ];
 
 const ENGINEERING_DEPARTMENTS = ['engineering', 'technology', 'software', 'product', 'data', 'backend', 'frontend'];
