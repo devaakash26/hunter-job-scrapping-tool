@@ -10,6 +10,7 @@ import { AmazonScraper } from './amazon.scraper';
 import { OracleScraper } from './oracle.scraper';
 import { LeverScraper } from './lever.scraper';
 import { GreenhouseScraper } from './greenhouse.scraper';
+import { SmartRecruitersScraper } from './smartrecruiters.scraper';
 import { StartupsScraper } from './startups.scraper';
 
 export const ALL_SCRAPERS: BaseScraper[] = [
@@ -25,9 +26,10 @@ export const ALL_SCRAPERS: BaseScraper[] = [
   new MicrosoftScraper(),
   new AmazonScraper(),
   new OracleScraper(),
-  // Indian startups via Lever / Greenhouse APIs
+  // Indian startups via Lever / Greenhouse / SmartRecruiters APIs (no auth)
   new LeverScraper(),
   new GreenhouseScraper(),
+  new SmartRecruitersScraper(),
   // Indian startups via Playwright
   new StartupsScraper(),
 ];
@@ -45,5 +47,6 @@ export {
   OracleScraper,
   LeverScraper,
   GreenhouseScraper,
+  SmartRecruitersScraper,
   StartupsScraper,
 };

@@ -52,6 +52,54 @@ const STARTUP_CONFIGS: StartupConfig[] = [
       link: 'a',
     },
   },
+  {
+    platform: PLATFORMS.FLIPKART,
+    company: 'Flipkart',
+    url: 'https://www.flipkartcareers.com/#!/joblist',
+    selectors: {
+      card: '[class*="job"], [class*="card"], [class*="listing"], .job-item',
+      title: 'h3, h4, [class*="title"], [class*="job-name"]',
+      location: '[class*="location"], [class*="city"]',
+      tags: '[class*="department"], [class*="category"], [class*="function"]',
+      link: 'a',
+    },
+  },
+  {
+    platform: PLATFORMS.PAYTM,
+    company: 'Paytm',
+    url: 'https://paytmjobs.com/jobs/',
+    selectors: {
+      card: '.job-listing, [class*="job-card"], article, .position',
+      title: 'h2, h3, [class*="title"], [class*="position"]',
+      location: '[class*="location"], [class*="city"]',
+      tags: '[class*="department"], [class*="team"], [class*="category"]',
+      link: 'a',
+    },
+  },
+  {
+    platform: PLATFORMS.MYNTRA,
+    company: 'Myntra',
+    url: 'https://careers.myntra.com/',
+    selectors: {
+      card: '[class*="job"], [class*="position"], [class*="card"], li.opening',
+      title: 'h3, h4, [class*="title"], [class*="role"]',
+      location: '[class*="location"]',
+      tags: '[class*="department"], [class*="function"]',
+      link: 'a',
+    },
+  },
+  {
+    platform: PLATFORMS.WALMART_TECH,
+    company: 'Walmart Global Tech India',
+    url: 'https://careers.walmart.com/results?q=software+engineer&locationCountry=IN&jobDepartmentCodeList=1110',
+    selectors: {
+      card: '[class*="job"], [class*="result"], article[class*="posting"], li[class*="job"]',
+      title: 'h2, h3, [class*="title"], [class*="job-title"]',
+      location: '[class*="location"], [class*="city"]',
+      tags: '[class*="department"], [class*="category"]',
+      link: 'a[href*="/job/"]',
+    },
+  },
 ];
 
 export class StartupsScraper extends BaseScraper {

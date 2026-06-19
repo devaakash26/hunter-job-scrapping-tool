@@ -27,6 +27,14 @@ interface GreenhouseCompanyConfig {
 const GREENHOUSE_COMPANIES: GreenhouseCompanyConfig[] = [
   { slug: 'groww', displayName: 'Groww', platform: 'groww' },
   { slug: 'cred-1', displayName: 'CRED', platform: 'cred' },
+  { slug: 'freshworks', displayName: 'Freshworks', platform: 'freshworks' },
+  { slug: 'browserstack', displayName: 'BrowserStack', platform: 'browserstack' },
+  { slug: 'chargebee', displayName: 'Chargebee', platform: 'chargebee' },
+  { slug: 'hasura', displayName: 'Hasura', platform: 'hasura' },
+  { slug: 'postmanlabs', displayName: 'Postman', platform: 'postman' },
+  { slug: 'getslice', displayName: 'Slice', platform: 'slice' },
+  { slug: 'juspay', displayName: 'Juspay', platform: 'juspay' },
+  { slug: 'sharechat', displayName: 'ShareChat', platform: 'sharechat' },
 ];
 
 const ENGINEERING_DEPTS = ['engineering', 'technology', 'software', 'product', 'data', 'backend', 'frontend', 'platform'];
