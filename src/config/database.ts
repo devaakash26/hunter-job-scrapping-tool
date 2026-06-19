@@ -9,7 +9,9 @@ export const AppDataSource = new DataSource({
   url: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   entities: [Job],
-  synchronize: true,
+  // Vercel: serverless cold starts hang on schema sync with PgBouncer — skip it.
+  // Railway: sync on startup to auto-create/update the jobs table.
+  synchronize: !process.env.VERCEL,
   logging: process.env.NODE_ENV === 'development',
   extra: {
     max: 5,
