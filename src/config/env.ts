@@ -16,15 +16,12 @@ export const config = {
     url: requireEnv('DATABASE_URL'),
   },
   dashboard: {
-    apiKey: requireEnv('DASHBOARD_API_KEY'),
-    port: parseInt(process.env.PORT ?? String(DASHBOARD.DEFAULT_PORT)),
+    port: parseInt(process.env.DASHBOARD_PORT ?? String(DASHBOARD.DEFAULT_PORT)),
   },
   auth: {
     secret: process.env.AUTH_SECRET || 'jh-default-secret-change-in-prod',
   },
   qstash: {
-    url: process.env.QSTASH_URL ?? '',
-    token: process.env.QSTASH_TOKEN ?? '',
     currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY ?? '',
     nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY ?? '',
   },

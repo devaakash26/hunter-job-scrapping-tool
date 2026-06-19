@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "",
   "functions": {
     "api/server.ts": {
       "maxDuration": 30,
