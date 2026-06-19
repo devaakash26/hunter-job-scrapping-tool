@@ -9,8 +9,7 @@ export const AppDataSource = new DataSource({
   url: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   entities: [Job],
-  synchronize: false,
-  migrations: ['src/migrations/*.ts'],
+  synchronize: true,
   logging: process.env.NODE_ENV === 'development',
   extra: {
     max: 5,
