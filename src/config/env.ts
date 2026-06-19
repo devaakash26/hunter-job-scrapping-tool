@@ -18,7 +18,7 @@ export const config = {
   dashboard: {
     port: parseInt(process.env.DASHBOARD_PORT ?? String(DASHBOARD.DEFAULT_PORT)),
   },
-  auth: {
+  auth: { 
     secret: process.env.AUTH_SECRET || 'jh-default-secret-change-in-prod',
   },
   qstash: {
