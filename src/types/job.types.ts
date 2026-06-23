@@ -23,4 +23,9 @@ export interface JobFilters {
   search?: string;
   source?: string;
   page?: number;
+  easyApply?: boolean;
+  location?: string;
+  ycOnly?: boolean;
+  hasSalary?: boolean;
+  sortBy?: 'newest' | 'oldest' | 'company';
 }

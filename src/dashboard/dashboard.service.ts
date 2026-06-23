@@ -6,28 +6,44 @@ import { DASHBOARD } from '../constants';
 export class DashboardService {
   async getJobs(filters: JobFilters): Promise<{ jobs: Job[]; total: number }> {
     const repo = AppDataSource.getRepository(Job);
-    const qb = repo.createQueryBuilder('job').orderBy('job.createdAt', 'DESC');
+    const qb = repo.createQueryBuilder('job');
 
     if (filters.status && filters.status !== 'all') {
       qb.andWhere('job.status = :status', { status: filters.status });
     }
-
     if (filters.source) {
       qb.andWhere('job.source = :source', { source: filters.source });
     }
-
     if (filters.search) {
       qb.andWhere(
-        '(LOWER(job.title) LIKE :search OR LOWER(job.company) LIKE :search)',
+        '(LOWER(job.title) LIKE :search OR LOWER(job.company) LIKE :search OR LOWER(job.tags) LIKE :search)',
         { search: `%${filters.search.toLowerCase()}%` },
       );
     }
+    if (filters.location) {
+      qb.andWhere('LOWER(job.location) LIKE :loc', { loc: `%${filters.location.toLowerCase()}%` });
+    }
+    if (filters.easyApply) {
+      qb.andWhere('job.easyApply = :ea', { ea: true });
+    }
+    if (filters.ycOnly) {
+      qb.andWhere("job.ycBatch IS NOT NULL AND job.ycBatch != ''");
+    }
+    if (filters.hasSalary) {
+      qb.andWhere("job.salary != 'Not mentioned' AND job.salary IS NOT NULL AND job.salary != ''");
+    }
+
+    const sortMap: Record<string, [string, 'ASC' | 'DESC']> = {
+      oldest:  ['job.createdAt', 'ASC'],
+      company: ['job.company', 'ASC'],
+      newest:  ['job.createdAt', 'DESC'],
+    };
+    const [col, dir] = sortMap[filters.sortBy ?? 'newest'] ?? sortMap['newest'];
+    qb.orderBy(col, dir);
 
     const page = filters.page ?? 1;
-    const skip = (page - 1) * DASHBOARD.ITEMS_PER_PAGE;
-
     const [jobs, total] = await qb
-      .skip(skip)
+      .skip((page - 1) * DASHBOARD.ITEMS_PER_PAGE)
       .take(DASHBOARD.ITEMS_PER_PAGE)
       .getManyAndCount();
 
@@ -49,65 +65,39 @@ export class DashboardService {
     const repo = AppDataSource.getRepository(Job);
     const job = await repo.findOneBy({ id: jobId });
     if (!job) return null;
-
     job.status = status;
-    if (status === 'applied') {
-      job.appliedAt = new Date();
-    }
-
+    if (status === 'applied') job.appliedAt = new Date();
     return repo.save(job);
   }
 
   async getStats(): Promise<DashboardStats> {
     const repo = AppDataSource.getRepository(Job);
-
     const total = await repo.count();
 
-    const byStatusRaw = await repo
-      .createQueryBuilder('job')
-      .select('job.status', 'status')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('job.status')
-      .getRawMany<{ status: string; count: string }>();
-
-    const bySourceRaw = await repo
-      .createQueryBuilder('job')
-      .select('job.source', 'source')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('job.source')
-      .getRawMany<{ source: string; count: string }>();
+    const [byStatusRaw, bySourceRaw] = await Promise.all([
+      repo.createQueryBuilder('job').select('job.status','status').addSelect('COUNT(*)','count').groupBy('job.status').getRawMany<{status:string;count:string}>(),
+      repo.createQueryBuilder('job').select('job.source','source').addSelect('COUNT(*)','count').groupBy('job.source').getRawMany<{source:string;count:string}>(),
+    ]);
 
     const now = new Date();
-    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const twoWeeksStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const weekStart    = new Date(now.getTime() - 7  * 86400000);
+    const twoWeeksStart = new Date(now.getTime() - 14 * 86400000);
 
-    const thisWeek = await repo
-      .createQueryBuilder('job')
-      .where('job.createdAt >= :start', { start: weekStart })
-      .getCount();
+    const [thisWeek, lastWeek] = await Promise.all([
+      repo.createQueryBuilder('job').where('job.createdAt >= :s', { s: weekStart }).getCount(),
+      repo.createQueryBuilder('job').where('job.createdAt >= :s AND job.createdAt < :e', { s: twoWeeksStart, e: weekStart }).getCount(),
+    ]);
 
-    const lastWeek = await repo
-      .createQueryBuilder('job')
-      .where('job.createdAt >= :start AND job.createdAt < :end', {
-        start: twoWeeksStart,
-        end: weekStart,
-      })
-      .getCount();
-
-    const applied = byStatusRaw.find((r) => r.status === 'applied');
-    const interviews = byStatusRaw.find((r) => r.status === 'interview');
-    const appliedCount = parseInt(applied?.count ?? '0');
-    const interviewCount = parseInt(interviews?.count ?? '0');
-    const responseRate =
-      appliedCount > 0 ? Math.round((interviewCount / appliedCount) * 100) : 0;
+    const appliedCount   = parseInt(byStatusRaw.find(r => r.status === 'applied')?.count   ?? '0');
+    const interviewCount = parseInt(byStatusRaw.find(r => r.status === 'interview')?.count ?? '0');
 
     return {
       total,
-      byStatus: Object.fromEntries(byStatusRaw.map((r) => [r.status, parseInt(r.count)])),
-      bySource: Object.fromEntries(bySourceRaw.map((r) => [r.source, parseInt(r.count)])),
+      byStatus: Object.fromEntries(byStatusRaw.map(r => [r.status, parseInt(r.count)])),
+      bySource: Object.fromEntries(bySourceRaw.map(r => [r.source, parseInt(r.count)])),
       thisWeek,
       lastWeek,
-      responseRate,
+      responseRate: appliedCount > 0 ? Math.round((interviewCount / appliedCount) * 100) : 0,
     };
   }
 }
