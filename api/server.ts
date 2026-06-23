@@ -1,37 +1,55 @@
-import 'dotenv/config';
-import 'reflect-metadata';
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import path from 'path';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { initializeDatabase } from '../src/config/database';
-import { dashboardRouter } from '../src/dashboard/dashboard.router';
-import { config } from '../src/config/env';
+import "dotenv/config";
+import "reflect-metadata";
+import express from "express";
+import cookieParser from "cookie-parser";
+import path from "path";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { initializeDatabase } from "../src/config/database";
+import { dashboardRouter } from "../src/dashboard/dashboard.router";
+import { config } from "../src/config/env";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(config.auth.secret));
-app.set('view engine', 'ejs');
+app.set("view engine", "ejs");
 // views/ is included via vercel.json "includeFiles" — process.cwd() resolves to project root
-app.set('views', path.join(process.cwd(), 'views'));
+app.set("views", path.join(process.cwd(), "views"));
 
-app.use('/', dashboardRouter);
-app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.use("/", dashboardRouter);
+app.get("/health", (_req, res) =>
+  res.json({ status: "ok", timestamp: new Date().toISOString() }),
+);
 
 let dbReady = false;
 
-export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
-  if (!dbReady) {
-    await initializeDatabase();
-    dbReady = true;
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
+  try {
+    if (!dbReady) {
+      await initializeDatabase();
+      dbReady = true;
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Database init failed";
+    res.status(500).json({ error: message });
+    return;
   }
-  await new Promise<void>((resolve) => app(req as never, res as never, () => resolve()));
+  // Resolve when the response finishes (any route that responds) OR on
+  // 404 fall-through. The old version only resolved on fall-through, so a
+  // route that sent a response left this promise pending until timeout.
+  await new Promise<void>((resolve) => {
+    res.on("finish", resolve);
+    res.on("close", resolve);
+    app(req as never, res as never, () => resolve());
+  });
 }
 
 // Local dev: `npm run dev:dashboard`
 if (!process.env.VERCEL) {
-  const PORT = parseInt(process.env.DASHBOARD_PORT ?? '3000');
+  const PORT = parseInt(process.env.DASHBOARD_PORT ?? "3000");
   initializeDatabase()
     .then(() => {
       app.listen(PORT, () =>
@@ -39,7 +57,7 @@ if (!process.env.VERCEL) {
       );
     })
     .catch((err) => {
-      console.error('[DEV] DB init failed:', err);
+      console.error("[DEV] DB init failed:", err);
       process.exit(1);
     });
 }
