@@ -15,19 +15,10 @@ interface StartupConfig {
   };
 }
 
+// PhonePe (→ Greenhouse), Paytm (→ Lever) and Zomato (→ SmartRecruiters) were
+// removed from this fragile browser scraper now that they have reliable JSON
+// API sources. What remains has no public API and must be scraped via the DOM.
 const STARTUP_CONFIGS: StartupConfig[] = [
-  {
-    platform: PLATFORMS.ZOMATO,
-    company: 'Zomato',
-    url: 'https://www.zomato.com/careers#openings',
-    selectors: {
-      card: '[class*="job"], [class*="opening"], [class*="position"], .career-listing li',
-      title: 'h3, h4, [class*="title"], [class*="role"]',
-      location: '[class*="location"], [class*="city"]',
-      tags: '[class*="department"], [class*="team"]',
-      link: 'a',
-    },
-  },
   {
     platform: PLATFORMS.BLINKIT,
     company: 'Blinkit',
@@ -41,18 +32,6 @@ const STARTUP_CONFIGS: StartupConfig[] = [
     },
   },
   {
-    platform: PLATFORMS.PHONEPE,
-    company: 'PhonePe',
-    url: 'https://www.phonepe.com/en/careers/',
-    selectors: {
-      card: '[class*="job"], [class*="position"], [class*="opening"], .job-listing',
-      title: 'h3, h4, [class*="title"]',
-      location: '[class*="location"]',
-      tags: '[class*="department"], [class*="category"]',
-      link: 'a',
-    },
-  },
-  {
     platform: PLATFORMS.FLIPKART,
     company: 'Flipkart',
     url: 'https://www.flipkartcareers.com/#!/joblist',
@@ -61,18 +40,6 @@ const STARTUP_CONFIGS: StartupConfig[] = [
       title: 'h3, h4, [class*="title"], [class*="job-name"]',
       location: '[class*="location"], [class*="city"]',
       tags: '[class*="department"], [class*="category"], [class*="function"]',
-      link: 'a',
-    },
-  },
-  {
-    platform: PLATFORMS.PAYTM,
-    company: 'Paytm',
-    url: 'https://paytmjobs.com/jobs/',
-    selectors: {
-      card: '.job-listing, [class*="job-card"], article, .position',
-      title: 'h2, h3, [class*="title"], [class*="position"]',
-      location: '[class*="location"], [class*="city"]',
-      tags: '[class*="department"], [class*="team"], [class*="category"]',
       link: 'a',
     },
   },

@@ -7,7 +7,7 @@ interface SrJobAd {
   id?: string;
   name?: string;
   department?: { label?: string };
-  location?: { city?: string; country?: string; region?: string };
+  location?: { city?: string; country?: string; region?: string; fullLocation?: string };
   typeOfEmployment?: { label?: string };
   experienceLevel?: { label?: string };
   ref?: string;
@@ -25,7 +25,13 @@ interface SmartRecruitersCompanyConfig {
   platform: string;
 }
 
+// companyId is case-sensitive and verified live against api.smartrecruiters.com
+// (June 2026). Note Zomato's namespace is "Zomato1", not "Zomato".
 const SR_COMPANIES: SmartRecruitersCompanyConfig[] = [
+  { companyId: 'Freshworks', displayName: 'Freshworks', platform: 'freshworks' },
+  { companyId: 'Zomato1', displayName: 'Zomato', platform: 'zomato' },
+  { companyId: 'Cars24', displayName: 'Cars24', platform: 'cars24' },
+  { companyId: 'Unacademy', displayName: 'Unacademy', platform: 'unacademy' },
   { companyId: 'InMobi', displayName: 'InMobi', platform: 'inmobi' },
   { companyId: 'MakeMyTrip', displayName: 'MakeMyTrip', platform: 'makemytrip' },
 ];
@@ -62,15 +68,21 @@ export class SmartRecruitersScraper extends BaseScraper {
             .filter(isEngineeringJob)
             .slice(0, 15)
             .map((j): RawJob => {
-              const loc = [j.location?.city, j.location?.region, j.location?.country]
-                .filter(Boolean)
-                .join(', ') || 'India';
+              const loc =
+                j.location?.fullLocation ||
+                [j.location?.city, j.location?.region, j.location?.country].filter(Boolean).join(', ') ||
+                'India';
+              // The postings API has no apply URL; the public posting page is
+              // jobs.smartrecruiters.com/{companyId}/{postingId}.
+              const url = j.id
+                ? `https://jobs.smartrecruiters.com/${company.companyId}/${j.id}`
+                : `https://jobs.smartrecruiters.com/${company.companyId}`;
               return {
                 title: j.name || 'Unknown',
                 company: company.displayName,
                 location: loc,
                 salary: 'Not mentioned',
-                url: j.ref || `https://jobs.smartrecruiters.com/${company.companyId}`,
+                url,
                 source: company.platform,
                 tags: [j.department?.label, j.typeOfEmployment?.label, j.experienceLevel?.label]
                   .filter(Boolean)

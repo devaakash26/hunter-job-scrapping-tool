@@ -11,6 +11,7 @@ import { OracleScraper } from './oracle.scraper';
 import { LeverScraper } from './lever.scraper';
 import { GreenhouseScraper } from './greenhouse.scraper';
 import { SmartRecruitersScraper } from './smartrecruiters.scraper';
+import { AshbyScraper } from './ashby.scraper';
 import { StartupsScraper } from './startups.scraper';
 
 export const ALL_SCRAPERS: BaseScraper[] = [
@@ -30,6 +31,7 @@ export const ALL_SCRAPERS: BaseScraper[] = [
   new LeverScraper(),
   new GreenhouseScraper(),
   new SmartRecruitersScraper(),
+  new AshbyScraper(),
   // Indian startups via Playwright
   new StartupsScraper(),
 ];
@@ -48,5 +50,6 @@ export {
   LeverScraper,
   GreenhouseScraper,
   SmartRecruitersScraper,
+  AshbyScraper,
   StartupsScraper,
 };
