@@ -27,16 +27,13 @@ interface LeverCompanyConfig {
   platform: string;
 }
 
+// Slugs verified live against api.lever.co (June 2026). Razorpay moved to
+// Greenhouse; swiggy/zepto/scaler/dream11/urbancompany/nykaa/dunzo are no
+// longer on Lever (404) and were dropped.
 const LEVER_COMPANIES: LeverCompanyConfig[] = [
-  { slug: 'razorpay', displayName: 'Razorpay', platform: 'razorpay' },
-  { slug: 'swiggy', displayName: 'Swiggy', platform: 'swiggy' },
-  { slug: 'zepto', displayName: 'Zepto', platform: 'zepto' },
   { slug: 'meesho', displayName: 'Meesho', platform: 'meesho' },
-  { slug: 'scaler-academy', displayName: 'Scaler', platform: 'scaler' },
-  { slug: 'dream11', displayName: 'Dream11', platform: 'dream11' },
-  { slug: 'urbancompany', displayName: 'Urban Company', platform: 'urbancompany' },
-  { slug: 'nykaatech', displayName: 'Nykaa', platform: 'nykaa' },
-  { slug: 'dunzo', displayName: 'Dunzo', platform: 'dunzo' },
+  { slug: 'cred', displayName: 'CRED', platform: 'cred' },
+  { slug: 'paytm', displayName: 'Paytm', platform: 'paytm' },
 ];
 
 const ENGINEERING_DEPARTMENTS = ['engineering', 'technology', 'software', 'product', 'data', 'backend', 'frontend'];
