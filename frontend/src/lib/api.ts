@@ -54,4 +54,7 @@ export const api = {
     }),
 
   getStats: () => request<Stats>('/api/stats'),
+
+  runScraper: () =>
+    request<{ started: boolean; timestamp: string }>('/run-scraper', { method: 'POST' }),
 };

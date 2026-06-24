@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { DashboardService } from './dashboard.service';
+import { ScraperService } from '../services/scraper.service';
 import { DASHBOARD, PLATFORMS, PLATFORM_COLORS } from '../constants';
 import { JobStatus, JobFilters, JobUpdatePayload } from '../types';
 import { requireAuth, handleLogin, handleLogout } from '../middleware/auth';
@@ -112,7 +113,14 @@ router.get('/stats', async (_req: Request, res: Response): Promise<void> => {
 });
 
 router.post('/run-scraper', (_req: Request, res: Response): void => {
-  res.status(501).json({ error: 'Use the QStash /trigger endpoint to run the scraper.' });
+  res.json({ started: true, timestamp: new Date().toISOString() });
+  setImmediate(async () => {
+    try {
+      await new ScraperService().runPipeline();
+    } catch (err) {
+      console.error(`[${new Date().toISOString()}] [RUN-SCRAPER] Pipeline error:`, err);
+    }
+  });
 });
 
 export { router as dashboardRouter };

@@ -45,6 +45,9 @@ export default function DashboardPage() {
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [sources, setSources]           = useState<string[]>([]);
 
+  // Manual scraper trigger
+  const [scraperState, setScraperState] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Memoized filter params — a new object is created whenever any filter changes,
@@ -117,6 +120,19 @@ export default function DashboardPage() {
     setter(val);
   }
 
+  async function handleRunScraper() {
+    if (scraperState === 'running') return;
+    setScraperState('running');
+    try {
+      await api.runScraper();
+      setScraperState('done');
+      setTimeout(() => setScraperState('idle'), 4000);
+    } catch {
+      setScraperState('error');
+      setTimeout(() => setScraperState('idle'), 4000);
+    }
+  }
+
   function clearAll() {
     setSearch(''); setSearchInput(''); setSource('');
     setEasyApply(false); setHasSalary(false);
@@ -135,6 +151,22 @@ export default function DashboardPage() {
         <div className="page-header">
           <button className="hamburger" onClick={() => setSidebarOpen(true)}>☰</button>
           <div className="page-title">Job Dashboard</div>
+          <button
+            className="run-scraper-btn"
+            onClick={handleRunScraper}
+            disabled={scraperState === 'running'}
+            title="Scrape all platforms now"
+          >
+            {scraperState === 'running' && <span className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />}
+            {scraperState === 'idle'    && '⚡'}
+            {scraperState === 'done'    && '✓'}
+            {scraperState === 'error'   && '✕'}
+            <span>
+              {scraperState === 'running' ? 'Running…' :
+               scraperState === 'done'    ? 'Started!' :
+               scraperState === 'error'   ? 'Failed'   : 'Run Scraper'}
+            </span>
+          </button>
           <div className="header-stats">
             <span className="hstat hstat-total">
               <span className="hstat-dot" style={{ background: '#6366f1' }} />
