@@ -1,195 +1,200 @@
 # Job Hunter 🎯
 
-Automated job scraping system that monitors Wellfound, Cutshort, Instahyre, LinkedIn, and Y Combinator for new listings, filters them by your profile, sends Slack alerts, and hosts a dashboard to track applications.
+Automated job scraping system that monitors **50+ companies** across 5 job boards and 4 ATS platforms twice daily. Filters by role, salary, and experience — deduplicates against the database, sends Slack alerts, and surfaces everything in a personal React dashboard.
+
+**Stack:** Playwright · Express · TypeORM · Supabase PostgreSQL · QStash · React + Vite · Railway · Vercel
 
 ---
 
-## Features
+## Architecture
 
-- Scrapes 5 platforms every day at **9 AM IST** and **6 PM IST**
-- Filters by role keywords, salary (≥10 LPA or "Not mentioned"), location (Remote/Bangalore/India), and experience (0–2 years)
-- Deduplicates against the database — only alerts for new jobs
-- Sends Slack Block Kit notifications (up to 15 per run)
-- Express dashboard with status tracking (new → saved → applied → interview → rejected → offer)
-- Manual run endpoint (`GET /run-now`) with API key auth
-- Fallback to JSON files when the database is unavailable
+```
+QStash (cron)
+    ↓  HMAC-signed webhook  POST /trigger
+Railway (Express + Playwright)
+    ↓  scrape 50+ sources
+    ↓  deduplicate against DB
+Supabase PostgreSQL ← store new jobs
+    ↓
+Slack Bot ← alert up to 15 new jobs/run
+Vercel (React) ← browse, filter, track
+```
+
+Runs at **9 AM IST** and **6 PM IST** daily. Manual trigger available in the dashboard.
+
+---
+
+## Platforms Covered
+
+| Category | Platforms |
+|---|---|
+| **Job Boards** | Wellfound, Cutshort, Instahyre, LinkedIn, YC (Work at a Startup) |
+| **Big 4** | Google, Microsoft, Amazon, Oracle |
+| **Greenhouse ATS** | Groww, CRED, Freshworks, BrowserStack, Hasura, Postman, Databricks, MongoDB, Stripe, Figma, Cloudflare, Anthropic, OpenAI, Chargebee, ShareChat, GitLab, Rubrik, Coinbase, ScaleAI, HackerRank, Twilio, Notion |
+| **Lever ATS** | Swiggy, Razorpay, Zepto, Meesho, Scaler, Dream11, Urban Company, Nykaa, Dunzo |
+| **SmartRecruiters** | InMobi, MakeMyTrip, Cars24, Unacademy |
+| **Playwright** | Zomato, Blinkit, PhonePe, Flipkart, Paytm, Myntra, Walmart Tech, Airbnb |
 
 ---
 
 ## Local Setup
 
-### 1. Prerequisites
+### Prerequisites
 
 - Node.js v18+
-- A Supabase project (free tier works)
-- A Slack Incoming Webhook URL
+- Supabase project (free tier works)
+- Slack App with Bot Token + Channel ID
+- Upstash QStash account (for cron, free tier works)
 
-### 2. Clone and install
+### 1. Clone and install
 
 ```bash
-git clone <repo-url>
-cd job-hunter
+git clone https://github.com/devaakash26/hunter-job-scrapping-tool
+cd hunter-job-scrapping-tool
 npm install
+
+# Install frontend deps
+cd frontend && npm install && cd ..
 ```
 
-### 3. Configure environment
+### 2. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` — see [Environment Variables](#environment-variables) below.
 
-```
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx/yyy/zzz
-DATABASE_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
-DASHBOARD_API_KEY=choose_a_strong_secret
-PORT=3000
-NODE_ENV=development
-```
+### 3. Create the database table
 
-### 4. Run the database migration
+Run in Supabase SQL Editor:
 
-The migration creates the `jobs` table with all required columns and indexes.
-
-Option A — via TypeORM CLI:
-```bash
-npx typeorm migration:run -d src/config/database.ts
-```
-
-Option B — run the SQL directly in Supabase SQL Editor:
 ```sql
 CREATE TABLE IF NOT EXISTS jobs (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR NOT NULL,
-  company VARCHAR NOT NULL,
-  location VARCHAR,
-  salary VARCHAR DEFAULT 'Not mentioned',
-  url VARCHAR NOT NULL,
-  source VARCHAR NOT NULL,
-  tags VARCHAR,
-  "postedAt" VARCHAR,
+  id          SERIAL PRIMARY KEY,
+  title       VARCHAR NOT NULL,
+  company     VARCHAR NOT NULL,
+  location    VARCHAR,
+  salary      VARCHAR DEFAULT 'Not mentioned',
+  url         VARCHAR NOT NULL,
+  source      VARCHAR NOT NULL,
+  tags        VARCHAR,
+  "postedAt"  VARCHAR,
   "easyApply" BOOLEAN DEFAULT FALSE,
-  "ycBatch" VARCHAR,
-  status VARCHAR DEFAULT 'new',
-  alerted BOOLEAN DEFAULT FALSE,
+  "ycBatch"   VARCHAR,
+  status      VARCHAR DEFAULT 'new',
+  alerted     BOOLEAN DEFAULT FALSE,
   "appliedAt" TIMESTAMP,
   "createdAt" TIMESTAMP DEFAULT NOW(),
   CONSTRAINT uq_company_title_source UNIQUE (company, title, source)
 );
-CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs (company);
+CREATE INDEX IF NOT EXISTS idx_jobs_source ON jobs (source);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs (status);
 ```
 
-### 5. Build and run
+### 4. Save cookies for auth-required platforms
+
+LinkedIn, Wellfound, and Cutshort require login. This opens a visible browser — you have 60 seconds to sign in.
 
 ```bash
-# Development (ts-node, no build step)
-npm run dev
-
-# Production
-npm run build
-npm start
-```
-
-Dashboard is at: `http://localhost:3000`
-
----
-
-## Cookie Auth Setup
-
-Some platforms (Wellfound, Cutshort, LinkedIn) require login. Use the cookie saver to authenticate once — the scraper reuses the saved session.
-
-```bash
-# Save cookies for LinkedIn
 npx ts-node src/setup/saveCookies.ts linkedin
-
-# Save cookies for Wellfound
 npx ts-node src/setup/saveCookies.ts wellfound
-
-# Save cookies for Cutshort
 npx ts-node src/setup/saveCookies.ts cutshort
 ```
 
-This opens a **visible browser** window. You have 60 seconds to complete the login. The session is saved to `cookies/{platform}.json` (gitignored).
+Cookies are saved to `cookies/*.json` (gitignored). Re-run if a platform returns 0 jobs.
 
-**Cookie expiry:** If scraping returns 0 jobs for an auth-required platform, re-run the cookie saver for that platform.
-
----
-
-## Supabase Project Setup
-
-1. Go to [supabase.com](https://supabase.com) → New project
-2. Note your project's database password and project ref
-3. Go to **Settings → Database** → copy the **Connection string (URI)**
-4. Paste it as `DATABASE_URL` in your `.env`
-5. Run the migration above
-
----
-
-## Railway Deployment
-
-1. Push your code to GitHub (`.env`, `cookies/`, `fallback/` are gitignored — never commit them)
-2. Go to [railway.app](https://railway.app) → New project → Deploy from GitHub
-3. Add all environment variables from `.env.example` in the Railway dashboard
-4. Railway auto-detects Node.js. The `Procfile` tells it to run `node dist/index.js`
-5. The `postinstall` script installs Chromium automatically
-
-### Railway env vars to set:
-```
-SLACK_WEBHOOK_URL
-DATABASE_URL
-DASHBOARD_API_KEY
-NODE_ENV=production
-PORT=3000
-```
-
-> **Note:** Cookie-based auth (LinkedIn, Wellfound, Cutshort) won't work on Railway because you can't run a visible browser remotely. For production, either use Instahyre + YC (no auth) or set up cookie files as base64 environment variables and decode them at startup.
-
----
-
-## Testing the Pipeline
-
-Insert a dummy job and run the pipeline end to end:
+### 5. Start the servers
 
 ```bash
-# 1. Start the server
+# Backend (port 4000)
 npm run dev
 
-# 2. In another terminal, trigger a manual run
-curl -H "x-api-key: your_secret_key_here" http://localhost:3000/run-now
+# Frontend (port 5173) — in a new terminal
+cd frontend && npm run dev
 ```
 
-Or, insert directly into Supabase and check Slack:
+Dashboard: `http://localhost:5173`
 
-```sql
-INSERT INTO jobs (title, company, location, salary, url, source, tags, "postedAt", "easyApply", status, alerted)
-VALUES (
-  'Full Stack Engineer', 'Test Company', 'Remote', '12 LPA',
-  'https://example.com/job/123', 'yc', 'Node.js, React', 'Today', FALSE, 'new', FALSE
-);
-```
+---
 
-Then call `/run-now` — the dedup service will skip re-inserting but Slack will receive an alert for the unalerted row.
+## Environment Variables
+
+### Backend (Railway)
+
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | ✅ | Supabase Transaction Pooler URL (port 6543) |
+| `NODE_ENV` | ✅ | Set to `production` on Railway |
+| `AUTH_SECRET` | ✅ | Random 32-byte hex: `openssl rand -hex 32` |
+| `FRONTEND_URL` | ✅ | Vercel URL (controls CORS). Comma-separated for multiple. |
+| `QSTASH_CURRENT_SIGNING_KEY` | ✅ | From Upstash Console → QStash → Signing Keys |
+| `QSTASH_NEXT_SIGNING_KEY` | ✅ | Rotation key — same place |
+| `AUTH_USERNAME` | optional | Login username (default: `admin26`) |
+| `AUTH_PASSWORD` | optional | Login password |
+| `SLACK_BOT_TOKEN` | optional | Bot OAuth token (`xoxb-…`) |
+| `SLACK_CHANNEL_ID` | optional | Channel ID for job alerts |
+
+### Frontend (Vercel)
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_API_URL` | ✅ | Your Railway backend URL |
+
+---
+
+## Deployment
+
+### Railway (Backend)
+
+1. Push to GitHub
+2. Railway → New Project → Deploy from GitHub
+3. Add all backend env vars in Railway Variables tab
+4. `Procfile` runs: `node dist/index.js`
+5. `postinstall` script installs Chromium automatically
+
+### Vercel (Frontend)
+
+1. Vercel → New Project → Import repo
+2. Root directory: `./` (uses `vercel.json` at repo root)
+3. Add env var: `VITE_API_URL = https://your-app.railway.app`
+4. Deploy
+5. Update Railway's `FRONTEND_URL` to the Vercel URL
+
+### QStash (Cron)
+
+1. [console.upstash.com](https://console.upstash.com) → QStash → Create Schedule
+2. URL: `https://your-app.railway.app/trigger`
+3. Schedule 1: `30 3 * * *` → 9:00 AM IST
+4. Schedule 2: `30 12 * * *` → 6:00 PM IST
+5. Copy both signing keys to Railway env vars
 
 ---
 
 ## API Reference
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/` | None | Jobs dashboard |
-| GET | `/stats` | None | Stats page |
-| POST | `/update-status` | None | Update job status |
-| GET | `/run-now` | `x-api-key` | Trigger pipeline immediately |
-| GET | `/health` | None | Health check |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | None | Returns Bearer token |
+| `POST` | `/api/auth/logout` | None | Clears session |
+| `GET` | `/api/jobs` | Bearer | Paginated job list with filters |
+| `POST` | `/update-status` | Bearer | Update job pipeline status |
+| `GET` | `/api/stats` | Bearer | Aggregated stats |
+| `POST` | `/run-scraper` | Bearer | Manually trigger scraping pipeline |
+| `POST` | `/trigger` | QStash HMAC | QStash cron webhook |
+| `GET` | `/health` | None | `{"status":"ok"}` |
 
-### POST /update-status
+### GET /api/jobs — query params
 
-```json
-{ "jobId": 42, "status": "applied" }
-```
-
-Valid statuses: `new`, `saved`, `applied`, `interview`, `rejected`, `offer`
+| Param | Values | Default |
+|---|---|---|
+| `status` | `all`, `new`, `saved`, `applied`, `interview`, `rejected`, `offer` | `all` |
+| `sortBy` | `newest`, `oldest`, `company` | `newest` |
+| `search` | string | — |
+| `source` | platform name | — |
+| `easyApply` | `1` | — |
+| `hasSalary` | `1` | — |
+| `page` | integer | `1` |
 
 ---
 
@@ -197,25 +202,44 @@ Valid statuses: `new`, `saved`, `applied`, `interview`, `rejected`, `offer`
 
 ```
 src/
-├── config/          # DB + env config
-├── constants/       # All hardcoded values (no strings in logic files)
-├── types/           # TypeScript interfaces
+├── config/          # Database + env config
+├── constants/       # Platforms, auth, dashboard config
 ├── entities/        # TypeORM Job entity
+├── middleware/       # requireAuth, HMAC verification
 ├── scrapers/        # One scraper per platform + base class
-├── services/        # FilterService, DedupService, SlackService, ScraperService
-├── cron/            # node-cron scheduler
-├── dashboard/       # Express routes + DB queries
-├── setup/           # Cookie saver script
-└── migrations/      # TypeORM migration
+├── services/        # ScraperService, FilterService, DedupService, SlackService
+├── dashboard/       # Express router + DashboardService
+├── setup/           # Cookie saver + exporter scripts
+└── types/           # Shared TypeScript interfaces
+
+frontend/
+├── src/
+│   ├── pages/       # LoginPage, DashboardPage, StatsPage
+│   ├── components/  # Sidebar
+│   └── lib/         # api.ts, types.ts, constants.ts
+└── vite.config.ts   # Dev proxy → localhost:4000
 ```
 
 ---
 
-## Cron Schedule
+## Job Status Pipeline
 
-| Job | UTC | IST |
-|-----|-----|-----|
-| Morning | `30 3 * * *` | 9:00 AM |
-| Evening | `30 12 * * *` | 6:00 PM |
+```
+new → saved → applied → interview → rejected
+                                  ↘ offer
+```
 
-Timezone: `Asia/Kolkata` (handled by node-cron)
+Change status directly from the job card dropdown. Stats page shows response rate and weekly trends.
+
+---
+
+## Cookie Auth Note
+
+LinkedIn, Wellfound, and Cutshort require a logged-in browser session. Cookies expire — if a platform returns 0 results, re-run `saveCookies.ts` for that platform. Railway can't open a visible browser, so save cookies locally and export them:
+
+```bash
+npx ts-node src/setup/exportCookies.ts
+# Sets WELLFOUND_COOKIES / LINKEDIN_COOKIES / CUTSHORT_COOKIES env vars (base64)
+```
+
+Then set those as Railway environment variables.
