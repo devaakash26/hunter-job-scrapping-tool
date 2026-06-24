@@ -142,6 +142,23 @@ html, body, #root {
 }
 .hamburger:hover { background: var(--bg); }
 
+.run-scraper-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 9px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.01em;
+  background: linear-gradient(100deg, #e2613a, #f0a14e);
+  color: #fff6ee;
+  box-shadow: 0 4px 14px -4px rgba(226,97,58,.5);
+  transition: opacity .15s, transform .15s, box-shadow .15s;
+  white-space: nowrap; flex-shrink: 0;
+}
+.run-scraper-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -4px rgba(226,97,58,.65);
+}
+.run-scraper-btn:disabled { opacity: .7; cursor: default; }
+.run-scraper-btn:has(+ .header-stats) { margin-left: auto; }
+
 .page-body { padding: 20px 28px; flex: 1; width: 100%; }
 
 /* ══════════════════ FILTERS ══════════════════ */
