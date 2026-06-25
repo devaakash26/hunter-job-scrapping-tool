@@ -8,6 +8,7 @@ export default defineConfig({
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
       '/update-status': { target: 'http://localhost:4000', changeOrigin: true },
       '/trigger': { target: 'http://localhost:4000', changeOrigin: true },
+      '/run-scraper': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },
 });
