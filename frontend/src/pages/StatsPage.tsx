@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import type { Stats } from '../lib/types';
-import { STATUS_COLORS, platformColor } from '../lib/constants';
+import { STATUS_COLORS, BRAND_INDIGO, platformColor } from '../lib/constants';
 import Sidebar from '../components/Sidebar';
 
 export default function StatsPage() {
@@ -54,13 +54,13 @@ function StatsContent({ stats }: { stats: Stats }) {
         <div className="stat-card">
           <div className="stat-icon">📦</div>
           <div className="stat-label">Total Jobs</div>
-          <div className="stat-value" style={{ color: '#6366f1' }}>{stats.total.toLocaleString()}</div>
+          <div className="stat-value" style={{ color: BRAND_INDIGO }}>{stats.total.toLocaleString()}</div>
           <div className="stat-sub">across all platforms</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon">📅</div>
           <div className="stat-label">This Week</div>
-          <div className="stat-value" style={{ color: '#3b82f6' }}>{stats.thisWeek}</div>
+          <div className="stat-value" style={{ color: STATUS_COLORS.new }}>{stats.thisWeek}</div>
           <div className="stat-sub">
             {weekChange >= 0
               ? <span className="stat-positive">↑ {weekChange} vs last week</span>

@@ -21,7 +21,7 @@ export class InstahyreScraper extends BaseScraper {
           timeout: SCRAPER.NAVIGATION_TIMEOUT_MS,
         });
 
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(SCRAPER.PAGE_SETTLE_MS);
 
         await page
           .waitForSelector('.job-result-card, [class*="job-card"], [class*="jobCard"]', {

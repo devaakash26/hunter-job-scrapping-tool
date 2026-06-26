@@ -44,8 +44,7 @@ export class GoogleScraper extends BaseScraper {
           },
         });
 
-        const data = res.data;
-        for (const job of data.jobs ?? []) {
+        for (const job of res.data?.jobs ?? []) {
           const mapped = this.mapJob(job);
           if (mapped) jobs.push(mapped);
         }

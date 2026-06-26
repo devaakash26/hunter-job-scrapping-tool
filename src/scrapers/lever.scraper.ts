@@ -52,7 +52,6 @@ function parseSalary(sr?: LeverPosting['salaryRange']): string {
   return `${cur}${(sr.min || sr.max)!.toLocaleString()}${interval}`;
 }
 
-// Single scraper that hits all Lever companies in one run
 export class LeverScraper extends BaseScraper {
   platform = 'lever';
 
@@ -72,7 +71,7 @@ export class LeverScraper extends BaseScraper {
           const postings = Array.isArray(res.data) ? res.data : [];
           const jobs = postings
             .filter(isEngineeringRole)
-            .slice(0, 15)
+            .slice(0, SCRAPER.MAX_JOBS_PER_COMPANY)
             .map((p): RawJob => ({
               title: p.text || 'Unknown',
               company: company.displayName,
@@ -83,9 +82,7 @@ export class LeverScraper extends BaseScraper {
               tags: [p.categories?.team, p.categories?.commitment, ...(p.tags ?? [])]
                 .filter(Boolean)
                 .join(', '),
-              postedAt: p.createdAt
-                ? new Date(p.createdAt).toLocaleDateString('en-IN')
-                : '',
+              postedAt: this.formatPostedAt(p.createdAt),
               easyApply: true,
             }));
 

@@ -19,9 +19,8 @@ export class LinkedInScraper extends BaseScraper {
             timeout: SCRAPER.NAVIGATION_TIMEOUT_MS,
           });
 
-          await page.waitForTimeout(3000);
+          await page.waitForTimeout(SCRAPER.PAGE_SETTLE_MS);
 
-          // Wait for job list
           await page
             .waitForSelector('.jobs-search__results-list li, .job-card-container', {
               timeout: SCRAPER.WAIT_FOR_SELECTOR_TIMEOUT_MS,

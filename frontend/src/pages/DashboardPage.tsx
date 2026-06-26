@@ -1,8 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { api } from '../lib/api';
 import type { Job, JobStatus } from '../lib/types';
-import { JOB_STATUSES, STATUS_COLORS, STATUS_BG, platformColor } from '../lib/constants';
+import {
+  JOB_STATUSES,
+  STATUS_COLORS,
+  STATUS_BG,
+  BRAND_INDIGO,
+  STATUS_ALL_COLOR,
+  platformColor,
+} from '../lib/constants';
 import Sidebar from '../components/Sidebar';
+
+// How long the Run-Scraper button shows its done/error state before resetting.
+const SCRAPER_RESET_MS = 4000;
+// How long a transient action error (e.g. failed status update) stays visible.
+const ACTION_ERROR_MS = 4000;
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -23,7 +35,6 @@ function avatarStyle(color: string) {
 }
 
 export default function DashboardPage() {
-  // Filter state
   const [status, setStatus]           = useState('all');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch]           = useState('');
@@ -32,26 +43,30 @@ export default function DashboardPage() {
   const [easyApply, setEasyApply]     = useState(false);
   const [hasSalary, setHasSalary]     = useState(false);
 
-  // Data state
   const [jobs, setJobs]               = useState<Job[]>([]);
   const [total, setTotal]             = useState(0);
   const [loading, setLoading]         = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError]             = useState(false);
   const [hasMore, setHasMore]         = useState(false);
   const [cursor, setCursor]           = useState(1);
+  const [reloadKey, setReloadKey]     = useState(0);
 
-  // Sidebar + aux state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [sources, setSources]           = useState<string[]>([]);
+  const [actionError, setActionError]   = useState('');
 
-  // Manual scraper trigger
   const [scraperState, setScraperState] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // Controller for the active filter "session"; aborting it cancels any in-flight
+  // page-1 or load-more request so a stale response can't overwrite newer results.
+  const abortRef = useRef<AbortController | null>(null);
+  // Synchronous guard against the IntersectionObserver firing loadMore twice.
+  const loadingMoreRef = useRef(false);
 
-  // Memoized filter params — a new object is created whenever any filter changes,
-  // which triggers the reset-and-reload effect below.
+  // A new object whenever any filter changes, which drives the reset-and-reload effect.
   const filterParams = useMemo(() => {
     const p: Record<string, string> = { sortBy };
     if (status !== 'all') p.status = status;
@@ -62,41 +77,60 @@ export default function DashboardPage() {
     return p;
   }, [status, search, source, sortBy, easyApply, hasSalary]);
 
-  // Reset and load page 1 when filters change
+  // Reset and load page 1 whenever filters change.
   useEffect(() => {
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
+    setError(false);
     setJobs([]);
     setCursor(1);
     setHasMore(false);
 
-    api.getJobs({ ...filterParams, page: '1' })
+    api.getJobs({ ...filterParams, page: '1' }, controller.signal)
       .then(data => {
         setJobs(data.jobs);
         setTotal(data.total);
         setHasMore(data.totalPages > 1);
         setCursor(1);
       })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [filterParams]);
+      .catch(err => {
+        if (controller.signal.aborted) return; // superseded by a newer filter change
+        console.error('Failed to load jobs:', err);
+        setError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
 
-  // Load next page (append)
+    return () => controller.abort();
+  }, [filterParams, reloadKey]);
+
+  // Load and append the next page (infinite scroll).
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMoreRef.current || !hasMore) return;
+    const controller = abortRef.current;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     const next = cursor + 1;
 
-    api.getJobs({ ...filterParams, page: String(next) })
+    api.getJobs({ ...filterParams, page: String(next) }, controller?.signal)
       .then(data => {
         setJobs(prev => [...prev, ...data.jobs]);
         setHasMore(next < data.totalPages);
         setCursor(next);
       })
-      .catch(console.error)
-      .finally(() => setLoadingMore(false));
-  }, [loadingMore, hasMore, cursor, filterParams]);
+      .catch(err => {
+        if (controller?.signal.aborted) return;
+        console.error('Failed to load more jobs:', err);
+      })
+      .finally(() => {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      });
+  }, [hasMore, cursor, filterParams]);
 
-  // Intersection observer — fires loadMore when sentinel enters viewport
+  // Fire loadMore when the sentinel scrolls into view.
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -108,17 +142,15 @@ export default function DashboardPage() {
     return () => obs.disconnect();
   }, [loadMore]);
 
-  // Fetch stats (sidebar count + filter sources)
+  // Sidebar counts + the platform filter's source list.
   useEffect(() => {
-    api.getStats().then(s => {
-      setStatusCounts(s.byStatus);
-      setSources(Object.keys(s.bySource).sort((a, b) => s.bySource[b] - s.bySource[a]));
-    }).catch(() => {});
+    api.getStats()
+      .then(s => {
+        setStatusCounts(s.byStatus);
+        setSources(Object.keys(s.bySource).sort((a, b) => s.bySource[b] - s.bySource[a]));
+      })
+      .catch(err => console.error('Failed to load stats:', err));
   }, []);
-
-  function setFilter<T>(setter: (v: T) => void, val: T) {
-    setter(val);
-  }
 
   async function handleRunScraper() {
     if (scraperState === 'running') return;
@@ -126,10 +158,25 @@ export default function DashboardPage() {
     try {
       await api.runScraper();
       setScraperState('done');
-      setTimeout(() => setScraperState('idle'), 4000);
     } catch {
       setScraperState('error');
-      setTimeout(() => setScraperState('idle'), 4000);
+    } finally {
+      setTimeout(() => setScraperState('idle'), SCRAPER_RESET_MS);
+    }
+  }
+
+  async function handleStatusChange(id: number, next: string) {
+    const previous = jobs.find(j => j.id === id)?.status;
+    setJobs(prev => prev.map(j => (j.id === id ? { ...j, status: next as JobStatus } : j)));
+    try {
+      await api.updateStatus(id, next);
+    } catch {
+      // Revert the optimistic change and let the user know it didn't stick.
+      if (previous) {
+        setJobs(prev => prev.map(j => (j.id === id ? { ...j, status: previous } : j)));
+      }
+      setActionError('Could not update status — please retry.');
+      setTimeout(() => setActionError(''), ACTION_ERROR_MS);
     }
   }
 
@@ -147,7 +194,6 @@ export default function DashboardPage() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} totalJobs={totalAll} />
 
       <div className="main">
-        {/* Header */}
         <div className="page-header">
           <button className="hamburger" onClick={() => setSidebarOpen(true)}>☰</button>
           <div className="page-title">Job Dashboard</div>
@@ -169,20 +215,20 @@ export default function DashboardPage() {
           </button>
           <div className="header-stats">
             <span className="hstat hstat-total">
-              <span className="hstat-dot" style={{ background: '#6366f1' }} />
+              <span className="hstat-dot" style={{ background: BRAND_INDIGO }} />
               {totalAll} Total
             </span>
             <span className="hstat hstat-new">
-              <span className="hstat-dot" style={{ background: '#3b82f6' }} />
+              <span className="hstat-dot" style={{ background: STATUS_COLORS.new }} />
               {statusCounts.new ?? 0} New
             </span>
             <span className="hstat hstat-applied">
-              <span className="hstat-dot" style={{ background: '#f59e0b' }} />
+              <span className="hstat-dot" style={{ background: STATUS_COLORS.applied }} />
               {statusCounts.applied ?? 0} Applied
             </span>
             {(statusCounts.interview ?? 0) > 0 && (
               <span className="hstat hstat-interview">
-                <span className="hstat-dot" style={{ background: '#10b981' }} />
+                <span className="hstat-dot" style={{ background: STATUS_COLORS.interview }} />
                 {statusCounts.interview} Interview{statusCounts.interview > 1 ? 's' : ''}
               </span>
             )}
@@ -193,12 +239,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="page-body">
-          {/* Status tabs */}
+          {actionError && <div className="action-error">{actionError}</div>}
+
           <div className="status-row">
             <button
               className={`status-tab ${status === 'all' ? 'active' : ''}`}
-              style={status === 'all' ? { background: '#334155', borderColor: '#334155' } : {}}
-              onClick={() => setFilter(setStatus, 'all')}
+              style={status === 'all' ? { background: STATUS_ALL_COLOR, borderColor: STATUS_ALL_COLOR } : {}}
+              onClick={() => setStatus('all')}
             >
               All ({totalAll})
             </button>
@@ -206,37 +253,36 @@ export default function DashboardPage() {
               <button key={s}
                 className={`status-tab ${status === s ? 'active' : ''}`}
                 style={status === s ? { background: STATUS_COLORS[s], borderColor: STATUS_COLORS[s] } : {}}
-                onClick={() => setFilter(setStatus, s)}
+                onClick={() => setStatus(s)}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)} ({statusCounts[s] ?? 0})
               </button>
             ))}
-            {!loading && (
+            {!loading && !error && (
               <span className="results-meta">
                 <strong>{jobs.length}</strong> of <strong>{total}</strong>
               </span>
             )}
           </div>
 
-          {/* Filters bar */}
           <div className="filters-wrap">
             <div className="filters-bar">
-              <form className="search-wrap" onSubmit={e => { e.preventDefault(); setFilter(setSearch, searchInput); }}>
+              <form className="search-wrap" onSubmit={e => { e.preventDefault(); setSearch(searchInput); }}>
                 <span className="search-icon">🔍</span>
                 <input
                   type="text" placeholder="Search title, company or tags…"
                   value={searchInput}
                   onChange={e => setSearchInput(e.target.value)}
-                  onBlur={() => setFilter(setSearch, searchInput)}
+                  onBlur={() => { if (searchInput !== search) setSearch(searchInput); }}
                 />
               </form>
 
-              <select className="filter-select" value={source} onChange={e => setFilter(setSource, e.target.value)}>
+              <select className="filter-select" value={source} onChange={e => setSource(e.target.value)}>
                 <option value="">All platforms</option>
                 {sources.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
 
-              <select className="filter-select" value={sortBy} onChange={e => setFilter(setSortBy, e.target.value)} style={{ maxWidth: 140 }}>
+              <select className="filter-select" value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ maxWidth: 140 }}>
                 <option value="newest">↓ Newest first</option>
                 <option value="oldest">↑ Oldest first</option>
                 <option value="company">A–Z Company</option>
@@ -245,8 +291,8 @@ export default function DashboardPage() {
               <div className="filter-divider" />
 
               <div className="filter-toggles">
-                <button className={`filter-toggle ${easyApply ? 'on' : ''}`} onClick={() => setFilter(setEasyApply, !easyApply)}>⚡ Easy Apply</button>
-                <button className={`filter-toggle ${hasSalary ? 'on' : ''}`} onClick={() => setFilter(setHasSalary, !hasSalary)}>💰 Has Salary</button>
+                <button className={`filter-toggle ${easyApply ? 'on' : ''}`} onClick={() => setEasyApply(v => !v)}>⚡ Easy Apply</button>
+                <button className={`filter-toggle ${hasSalary ? 'on' : ''}`} onClick={() => setHasSalary(v => !v)}>💰 Has Salary</button>
               </div>
 
               {anyFilter && (
@@ -255,9 +301,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Job list */}
           {loading ? (
             <div className="loading-wrap"><div className="spinner" /> Loading jobs…</div>
+          ) : error ? (
+            <div className="empty-state">
+              <div className="empty-icon">⚠️</div>
+              <div className="empty-title">Couldn’t load jobs</div>
+              <div className="empty-sub">Check your connection or that the backend is running.</div>
+              <button className="filter-toggle" onClick={() => setReloadKey(k => k + 1)}>Retry</button>
+            </div>
           ) : jobs.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🔍</div>
@@ -267,15 +319,9 @@ export default function DashboardPage() {
           ) : (
             <div className="jobs-list">
               {jobs.map(job => (
-                <JobCard key={job.id} job={job}
-                  onStatusChange={async (id, s) => {
-                    await api.updateStatus(id, s);
-                    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: s as JobStatus } : j));
-                  }}
-                />
+                <JobCard key={job.id} job={job} onStatusChange={handleStatusChange} />
               ))}
 
-              {/* Sentinel — IntersectionObserver watches this element */}
               <div ref={sentinelRef} style={{ height: 1 }} />
 
               {loadingMore && (

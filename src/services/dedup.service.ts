@@ -49,7 +49,8 @@ export class DedupService {
     });
 
     try {
-      // Use insert with ignore on conflict to avoid duplicate errors
+      // Duplicates were already filtered in getNewJobs(); a unique-constraint
+      // hit here falls through to the catch below.
       const saved = await repo.save(entities, { chunk: 50 });
       console.log(`[${new Date().toISOString()}] [DEDUP] Saved ${saved.length} jobs to DB`);
       return saved;
@@ -72,20 +73,6 @@ export class DedupService {
         .execute();
     } catch (err) {
       console.error(`[${new Date().toISOString()}] [DEDUP] ERROR: Failed to mark jobs as alerted`, err);
-    }
-  }
-
-  async getUnaletedJobs(limit: number): Promise<Job[]> {
-    try {
-      const repo = AppDataSource.getRepository(Job);
-      return repo.find({
-        where: { alerted: false },
-        order: { createdAt: 'DESC' },
-        take: limit,
-      });
-    } catch (err) {
-      console.error(`[${new Date().toISOString()}] [DEDUP] ERROR: Failed to fetch unalerted jobs`, err);
-      return [];
     }
   }
 

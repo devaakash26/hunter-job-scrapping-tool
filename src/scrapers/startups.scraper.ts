@@ -98,14 +98,13 @@ export class StartupsScraper extends BaseScraper {
       await page.goto(cfg.url, { waitUntil: 'networkidle', timeout: SCRAPER.NAVIGATION_TIMEOUT_MS });
       await page.waitForTimeout(2500);
 
-      // Try multiple selector strategies
       await page.waitForSelector(cfg.selectors.card, {
         timeout: SCRAPER.WAIT_FOR_SELECTOR_TIMEOUT_MS,
       }).catch(() => null);
 
       const cards = await page.$$(cfg.selectors.card);
 
-      for (const card of cards.slice(0, 15)) {
+      for (const card of cards.slice(0, SCRAPER.MAX_JOBS_PER_COMPANY)) {
         try {
           const title = this.normalizeText(
             await card.$eval(cfg.selectors.title, (el) => el.textContent).catch(() => ''),

@@ -91,6 +91,11 @@ export abstract class BaseScraper {
     return cleaned.length > 0 ? cleaned : 'Not mentioned';
   }
 
+  // Format an ATS timestamp (ms epoch or date string) as a localized IN date.
+  protected formatPostedAt(value: number | string | null | undefined): string {
+    return value ? new Date(value).toLocaleDateString('en-IN') : '';
+  }
+
   protected log(message: string): void {
     console.log(`[${new Date().toISOString()}] [${this.platform.toUpperCase()}] ${message}`);
   }

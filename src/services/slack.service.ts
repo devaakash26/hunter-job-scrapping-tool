@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { RawJob, ScraperResult } from '../types';
-import { SLACK, PLATFORMS } from '../constants';
+import { SLACK, PLATFORMS, FILTER } from '../constants';
 import { config } from '../config/env';
 
 export class SlackService {
@@ -10,7 +10,7 @@ export class SlackService {
     if (job.easyApply) badges.push('⚡ Easy Apply');
     if (job.ycBatch) badges.push(`🚀 YC ${job.ycBatch}`);
 
-    const salaryLine = job.salary && job.salary !== 'Not mentioned'
+    const salaryLine = job.salary && job.salary !== FILTER.SALARY_NOT_MENTIONED
       ? `💰 *${job.salary}*`
       : '💰 Salary not disclosed';
 
@@ -97,15 +97,6 @@ export class SlackService {
     };
 
     await this.sendWithRetry(payload);
-  }
-
-  async sendErrorAlert(platform: string, errorMessage: string): Promise<void> {
-    const payload = {
-      text: `${SLACK.EMOJIS.ERROR} *Scraper Error* [${platform.toUpperCase()}]: ${errorMessage}`,
-    };
-    await this.sendWithRetry(payload).catch(() => {
-      // Best-effort — don't cascade failures
-    });
   }
 
   private getJobEmoji(job: RawJob): string {

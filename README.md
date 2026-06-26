@@ -203,7 +203,7 @@ Dashboard: `http://localhost:5173`
 ```
 src/
 ├── config/          # Database + env config
-├── constants/       # Platforms, auth, dashboard config
+├── constants/       # Platforms, filters, dashboard, scraper, Slack config
 ├── entities/        # TypeORM Job entity
 ├── middleware/       # requireAuth, HMAC verification
 ├── scrapers/        # One scraper per platform + base class
@@ -215,7 +215,7 @@ src/
 frontend/
 ├── src/
 │   ├── pages/       # LoginPage, DashboardPage, StatsPage
-│   ├── components/  # Sidebar
+│   ├── components/  # Sidebar, ErrorBoundary
 │   └── lib/         # api.ts, types.ts, constants.ts
 └── vite.config.ts   # Dev proxy → localhost:4000
 ```

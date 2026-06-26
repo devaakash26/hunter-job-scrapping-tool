@@ -46,7 +46,6 @@ function isEngineeringJob(job: AshbyJob): boolean {
   return ENGINEERING_KEYWORDS.some((k) => title.includes(k) || dept.includes(k));
 }
 
-// Single scraper that hits all Ashby companies in one run.
 export class AshbyScraper extends BaseScraper {
   platform = 'ashby';
 
@@ -74,7 +73,7 @@ export class AshbyScraper extends BaseScraper {
                   )
                 : true,
             )
-            .slice(0, 15)
+            .slice(0, SCRAPER.MAX_JOBS_PER_COMPANY)
             .map((j): RawJob => ({
               title: j.title || 'Unknown',
               company: company.displayName,
@@ -83,7 +82,7 @@ export class AshbyScraper extends BaseScraper {
               url: j.jobUrl || j.applyUrl || `https://jobs.ashbyhq.com/${company.slug}`,
               source: company.platform,
               tags: [j.department, j.team, j.employmentType].filter(Boolean).join(', '),
-              postedAt: j.publishedAt ? new Date(j.publishedAt).toLocaleDateString('en-IN') : '',
+              postedAt: this.formatPostedAt(j.publishedAt),
               easyApply: true,
             }));
 

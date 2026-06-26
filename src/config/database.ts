@@ -1,14 +1,15 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { Job } from "../entities/job.entity";
+import { config } from "./env";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
-  url: process.env.DATABASE_URL,
+  url: config.db.url,
   ssl: { rejectUnauthorized: false },
   entities: [Job],
-  synchronize: !process.env.VERCEL,
-  logging: process.env.NODE_ENV === "development",
+  synchronize: !config.app.isVercel,
+  logging: config.app.isDev,
   extra: {
     // Serverless + Supabase transaction pooler (port 6543): each warm lambda
     // should hold at most ~1 server connection so the pgBouncer pool isn't

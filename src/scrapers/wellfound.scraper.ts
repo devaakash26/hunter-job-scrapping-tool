@@ -19,9 +19,8 @@ export class WellfoundScraper extends BaseScraper {
             timeout: SCRAPER.NAVIGATION_TIMEOUT_MS,
           });
 
-          await page.waitForTimeout(3000);
+          await page.waitForTimeout(SCRAPER.PAGE_SETTLE_MS);
 
-          // Wait for job listings
           await page
             .waitForSelector('div[data-test="StartupResult"]', {
               timeout: SCRAPER.WAIT_FOR_SELECTOR_TIMEOUT_MS,

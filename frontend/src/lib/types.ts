@@ -1,4 +1,6 @@
-export type JobStatus = 'new' | 'saved' | 'applied' | 'interview' | 'rejected' | 'offer';
+import { JOB_STATUSES } from './constants';
+
+export type JobStatus = (typeof JOB_STATUSES)[number];
 
 export interface Job {
   id: number;
