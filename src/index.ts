@@ -1,7 +1,6 @@
 import "dotenv/config";
 import "reflect-metadata";
 import express, { Request, Response } from "express";
-import cookieParser from "cookie-parser";
 import { Receiver } from "@upstash/qstash";
 import { initializeDatabase } from "./config/database";
 import { ScraperService } from "./services/scraper.service";
@@ -10,14 +9,10 @@ import { config } from "./config/env";
 
 const app = express();
 
-// CORS — allow React frontend (Vercel) and local dev
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
-  .split(",")
-  .map((s) => s.trim());
-
+// CORS — allow the React frontend (Vercel) and local dev
 app.use((req, res, next) => {
   const origin = req.headers.origin || "";
-  if (allowedOrigins.includes(origin)) {
+  if (config.app.frontendUrls.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
@@ -36,7 +31,6 @@ app.use("/trigger", express.raw({ type: "*/*" }));
 // JSON body for all other routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser(config.auth.secret));
 
 // QStash scraper trigger — registered BEFORE dashboardRouter so requireAuth never intercepts it
 const scraperService = new ScraperService();
@@ -95,11 +89,9 @@ app.use("/", dashboardRouter);
 
 async function bootstrap(): Promise<void> {
   await initializeDatabase();
-  const port = parseInt(process.env.PORT ?? "4000");
+  const { port } = config.app;
   app.listen(port, () => {
-    console.log(
-      `[${new Date().toISOString()}] [SERVER] Running on port ${port}`,
-    );
+    console.log(`[${new Date().toISOString()}] [SERVER] Running on port ${port}`);
   });
 }
 

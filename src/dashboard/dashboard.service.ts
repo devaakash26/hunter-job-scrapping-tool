@@ -1,7 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { Job } from '../entities/job.entity';
 import { JobFilters, JobStatus, DashboardStats } from '../types';
-import { DASHBOARD } from '../constants';
+import { DASHBOARD, FILTER } from '../constants';
 
 export class DashboardService {
   async getJobs(filters: JobFilters): Promise<{ jobs: Job[]; total: number }> {
@@ -30,7 +30,10 @@ export class DashboardService {
       qb.andWhere("job.ycBatch IS NOT NULL AND job.ycBatch != ''");
     }
     if (filters.hasSalary) {
-      qb.andWhere("job.salary != 'Not mentioned' AND job.salary IS NOT NULL AND job.salary != ''");
+      qb.andWhere('job.salary != :na AND job.salary IS NOT NULL AND job.salary != :empty', {
+        na: FILTER.SALARY_NOT_MENTIONED,
+        empty: '',
+      });
     }
 
     const sortMap: Record<string, [string, 'ASC' | 'DESC']> = {
@@ -48,17 +51,6 @@ export class DashboardService {
       .getManyAndCount();
 
     return { jobs, total };
-  }
-
-  async getStatusCounts(): Promise<Record<string, number>> {
-    const repo = AppDataSource.getRepository(Job);
-    const raw = await repo
-      .createQueryBuilder('job')
-      .select('job.status', 'status')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('job.status')
-      .getRawMany<{ status: string; count: string }>();
-    return Object.fromEntries(raw.map((r) => [r.status, parseInt(r.count)]));
   }
 
   async updateJobStatus(jobId: number, status: JobStatus): Promise<Job | null> {

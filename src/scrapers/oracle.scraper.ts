@@ -16,7 +16,7 @@ export class OracleScraper extends BaseScraper {
         const jobs: RawJob[] = [];
 
         await page.goto(ORACLE_URL, { waitUntil: 'networkidle', timeout: SCRAPER.NAVIGATION_TIMEOUT_MS });
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(SCRAPER.PAGE_SETTLE_MS);
 
         await page.waitForSelector('[class*="job"], [class*="Job"], .requisition-list li', {
           timeout: SCRAPER.WAIT_FOR_SELECTOR_TIMEOUT_MS,

@@ -98,7 +98,7 @@ export class GreenhouseScraper extends BaseScraper {
                 ? isIndiaLocation(j.location?.name, j.offices?.map((o) => o.name).join(' '))
                 : true,
             )
-            .slice(0, 15)
+            .slice(0, SCRAPER.MAX_JOBS_PER_COMPANY)
             .map((j): RawJob => ({
               title: j.title || 'Unknown',
               company: company.displayName,
@@ -109,7 +109,7 @@ export class GreenhouseScraper extends BaseScraper {
               url: j.absolute_url || `https://boards.greenhouse.io/${company.slug}`,
               source: company.platform,
               tags: j.departments?.map((d) => d.name).join(', ') || '',
-              postedAt: j.updated_at ? new Date(j.updated_at).toLocaleDateString('en-IN') : '',
+              postedAt: this.formatPostedAt(j.updated_at),
               easyApply: true,
             }));
 

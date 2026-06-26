@@ -1,6 +1,5 @@
 export const FILTER = {
   MIN_SALARY_LPA: 10,
-  MAX_EXPERIENCE_YEARS: 2,
   INCLUDE_KEYWORDS: [
     'SDE',
     'Software Engineer',

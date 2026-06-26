@@ -3,7 +3,11 @@ export const SCRAPER = {
   NAVIGATION_TIMEOUT_MS: 30000,
   WAIT_FOR_SELECTOR_TIMEOUT_MS: 15000,
   COOKIE_SAVE_WAIT_MS: 60000,
+  // Settle delay after a page load, before reading the DOM.
+  PAGE_SETTLE_MS: 3000,
+  // Single-site DOM scrapers cap per platform; multi-company ATS scrapers cap per company.
   MAX_JOBS_PER_PLATFORM: 50,
+  MAX_JOBS_PER_COMPANY: 15,
   USER_AGENT: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   HEADLESS: true,
   SLOW_MO_MS: 0,

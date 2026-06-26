@@ -7,15 +7,8 @@ export const SLACK = {
     EASY_APPLY: '⚡',
     YC_JOB: '🚀',
     NEW_JOB: '🔥',
-    SUMMARY: '📊',
-    NO_JOBS: '✅',
-    ERROR: '❌',
-    WARNING: '⚠️',
   },
   MESSAGES: {
-    NO_JOBS_FOUND: 'Checked all sources — no new jobs found.',
-    SUMMARY_TITLE: 'Job Hunt Update',
     APPLY_BUTTON_TEXT: 'Apply Now 🚀',
-    JOB_HEADER_PREFIX: 'New Job',
   },
 } as const;

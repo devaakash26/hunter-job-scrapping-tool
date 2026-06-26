@@ -1,4 +1,4 @@
-import { Page } from 'playwright';
+import type { Page } from 'playwright-core';
 import { BaseScraper } from './base.scraper';
 import { RawJob } from '../types';
 import { PLATFORMS, PLATFORM_URLS, SCRAPER } from '../constants';
@@ -23,7 +23,7 @@ export class YCombinatorScraper extends BaseScraper {
 
         for (const card of jobCards.slice(0, SCRAPER.MAX_JOBS_PER_PLATFORM)) {
           try {
-            const job = await this.extractJobFromCard(page, card);
+            const job = await this.extractJobFromCard(card);
             if (job) jobs.push(job);
           } catch (err) {
             this.logError(err);
@@ -40,7 +40,6 @@ export class YCombinatorScraper extends BaseScraper {
   }
 
   private async extractJobFromCard(
-    _page: Page,
     card: Awaited<ReturnType<Page['$']>>,
   ): Promise<RawJob | null> {
     if (!card) return null;

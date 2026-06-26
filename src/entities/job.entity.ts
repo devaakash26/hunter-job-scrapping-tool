@@ -9,7 +9,7 @@ import {
 
 @Entity('jobs')
 @Unique(['company', 'title', 'source'])
-export default class Job {
+export class Job {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -56,5 +56,3 @@ export default class Job {
   @CreateDateColumn()
   createdAt!: Date;
 }
-
-export { Job };

@@ -341,6 +341,18 @@ html, body, #root {
 .empty-icon  { font-size: 48px; margin-bottom: 14px; }
 .empty-title { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
 .empty-sub   { font-size: 13px; color: var(--muted); }
+.empty-state .filter-toggle { margin: 16px auto 0; }
+
+.action-error {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 /* ══════════════════ LOGIN ══════════════════ */
 .login-page { min-height: 100vh; background: #060912; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }

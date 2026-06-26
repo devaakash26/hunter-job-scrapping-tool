@@ -1,29 +1,39 @@
 import type { Job, JobsResponse, Stats } from './types';
+import { TOKEN_KEY } from './constants';
 
 const BASE = import.meta.env.VITE_API_URL ?? '';
 
-function getToken(): string | null {
-  return localStorage.getItem('jh_token');
+// Dispatched when auth is lost (401 or explicit logout). App navigates to login.
+export const UNAUTHORIZED_EVENT = 'jh:unauthorized';
+
+export const token = {
+  get: () => localStorage.getItem(TOKEN_KEY),
+  set: (value: string) => localStorage.setItem(TOKEN_KEY, value),
+  clear: () => localStorage.removeItem(TOKEN_KEY),
+};
+
+export function isLoggedIn(): boolean {
+  return !!token.get();
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = getToken();
+  const authToken = token.get();
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options?.headers ?? {}),
     },
   });
+
   if (res.status === 401) {
-    localStorage.removeItem('jh_token');
-    window.location.href = '/login';
+    token.clear();
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
     throw new Error('Unauthorized');
   }
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+    throw new Error((await res.text()) || `HTTP ${res.status}`);
   }
   return res.json() as Promise<T>;
 }
@@ -36,16 +46,12 @@ export const api = {
     }),
 
   logout: () => {
-    localStorage.removeItem('jh_token');
-    window.location.href = '/login';
+    token.clear();
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
   },
 
-  isLoggedIn: () => !!localStorage.getItem('jh_token'),
-
-  getJobs: (params: Record<string, string>) => {
-    const qs = new URLSearchParams(params).toString();
-    return request<JobsResponse>(`/api/jobs?${qs}`);
-  },
+  getJobs: (params: Record<string, string>, signal?: AbortSignal) =>
+    request<JobsResponse>(`/api/jobs?${new URLSearchParams(params).toString()}`, { signal }),
 
   updateStatus: (jobId: number, status: string) =>
     request<{ success: boolean; job: Job }>('/update-status', {

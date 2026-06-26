@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { PLATFORM_LOGIN_URLS, COOKIES_DIR } from '../constants';
 
-const SUPPORTED = ['wellfound', 'cutshort', 'linkedin'];
+const SUPPORTED = Object.keys(PLATFORM_LOGIN_URLS);
 
 const platform = process.argv[2];
 if (!platform || !SUPPORTED.includes(platform)) {
@@ -10,7 +11,7 @@ if (!platform || !SUPPORTED.includes(platform)) {
   process.exit(1);
 }
 
-const cookiePath = path.join(process.cwd(), 'cookies', `${platform}.json`);
+const cookiePath = path.join(process.cwd(), COOKIES_DIR, `${platform}.json`);
 if (!fs.existsSync(cookiePath)) {
   console.error(`Cookie file not found: ${cookiePath}`);
   console.error(`Run first: npx ts-node src/setup/saveCookies.ts ${platform}`);

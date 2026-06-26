@@ -1,3 +1,15 @@
+export const TOKEN_KEY = 'jh_token';
+
+export const ROUTES = {
+  LOGIN: '/login',
+  DASHBOARD: '/',
+  STATS: '/stats',
+} as const;
+
+// Brand accent + neutral "All" tab color, used across pages.
+export const BRAND_INDIGO = '#6366f1';
+export const STATUS_ALL_COLOR = '#334155';
+
 export const JOB_STATUSES = ['new', 'saved', 'applied', 'interview', 'rejected', 'offer'] as const;
 
 export const STATUS_COLORS: Record<string, string> = {

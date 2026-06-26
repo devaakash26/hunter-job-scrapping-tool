@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, token } from '../lib/api';
+import { ROUTES } from '../lib/constants';
 
-// Inject Google Fonts once
 let fontsInjected = false;
 function ensureFonts() {
   if (fontsInjected || typeof document === 'undefined') return;
@@ -173,9 +173,9 @@ export default function LoginPage() {
     triggerSheen();
     setLoading(true);
     try {
-      const { token } = await api.login(username, password);
-      localStorage.setItem('jh_token', token);
-      navigate('/');
+      const { token: jwt } = await api.login(username, password);
+      token.set(jwt);
+      navigate(ROUTES.DASHBOARD);
     } catch {
       setError('Invalid username or password');
     } finally {

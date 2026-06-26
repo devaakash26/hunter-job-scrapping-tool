@@ -14,13 +14,12 @@ export class CutshortScraper extends BaseScraper {
           const page = await context.newPage();
           const jobs: RawJob[] = [];
 
-          // Navigate to Cutshort jobs with React/Node filter
           await page.goto(`${PLATFORM_URLS[PLATFORMS.CUTSHORT]}?q=node+react&minExp=0&maxExp=2&minSalary=12`, {
             waitUntil: 'domcontentloaded',
             timeout: SCRAPER.NAVIGATION_TIMEOUT_MS,
           });
 
-          await page.waitForTimeout(3000);
+          await page.waitForTimeout(SCRAPER.PAGE_SETTLE_MS);
 
           await page
             .waitForSelector('.job-card, [class*="jobCard"], [class*="job-list-item"]', {

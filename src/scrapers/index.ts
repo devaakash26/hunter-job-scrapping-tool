@@ -35,21 +35,3 @@ export const ALL_SCRAPERS: BaseScraper[] = [
   // Indian startups via Playwright
   new StartupsScraper(),
 ];
-
-export {
-  BaseScraper,
-  WellfoundScraper,
-  CutshortScraper,
-  InstahyreScraper,
-  LinkedInScraper,
-  YCombinatorScraper,
-  GoogleScraper,
-  MicrosoftScraper,
-  AmazonScraper,
-  OracleScraper,
-  LeverScraper,
-  GreenhouseScraper,
-  SmartRecruitersScraper,
-  AshbyScraper,
-  StartupsScraper,
-};

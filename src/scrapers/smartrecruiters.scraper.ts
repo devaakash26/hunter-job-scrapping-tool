@@ -54,8 +54,8 @@ export class SmartRecruitersScraper extends BaseScraper {
     await Promise.allSettled(
       SR_COMPANIES.map(async (company) => {
         try {
-          const url = `https://api.smartrecruiters.com/v1/companies/${company.companyId}/postings?keyword=engineer&limit=100`;
-          const res = await axios.get<SrApiResponse>(url, {
+          const endpoint = `https://api.smartrecruiters.com/v1/companies/${company.companyId}/postings?keyword=engineer&limit=100`;
+          const res = await axios.get<SrApiResponse>(endpoint, {
             timeout: SCRAPER.BROWSER_TIMEOUT_MS,
             headers: {
               'User-Agent': SCRAPER.USER_AGENT,
@@ -66,28 +66,28 @@ export class SmartRecruitersScraper extends BaseScraper {
           const postings = res.data?.content ?? [];
           const jobs = postings
             .filter(isEngineeringJob)
-            .slice(0, 15)
+            .slice(0, SCRAPER.MAX_JOBS_PER_COMPANY)
             .map((j): RawJob => {
-              const loc =
+              const location =
                 j.location?.fullLocation ||
                 [j.location?.city, j.location?.region, j.location?.country].filter(Boolean).join(', ') ||
                 'India';
               // The postings API has no apply URL; the public posting page is
               // jobs.smartrecruiters.com/{companyId}/{postingId}.
-              const url = j.id
+              const postingUrl = j.id
                 ? `https://jobs.smartrecruiters.com/${company.companyId}/${j.id}`
                 : `https://jobs.smartrecruiters.com/${company.companyId}`;
               return {
                 title: j.name || 'Unknown',
                 company: company.displayName,
-                location: loc,
+                location,
                 salary: 'Not mentioned',
-                url,
+                url: postingUrl,
                 source: company.platform,
                 tags: [j.department?.label, j.typeOfEmployment?.label, j.experienceLevel?.label]
                   .filter(Boolean)
                   .join(', '),
-                postedAt: j.releasedDate ? new Date(j.releasedDate).toLocaleDateString('en-IN') : '',
+                postedAt: this.formatPostedAt(j.releasedDate),
                 easyApply: true,
               };
             });
