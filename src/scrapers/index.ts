@@ -12,6 +12,8 @@ import { LeverScraper } from './lever.scraper';
 import { GreenhouseScraper } from './greenhouse.scraper';
 import { SmartRecruitersScraper } from './smartrecruiters.scraper';
 import { AshbyScraper } from './ashby.scraper';
+import { WorkdayScraper } from './workday.scraper';
+import { MyNextHireScraper } from './mynexthire.scraper';
 import { StartupsScraper } from './startups.scraper';
 
 export const ALL_SCRAPERS: BaseScraper[] = [
@@ -32,6 +34,10 @@ export const ALL_SCRAPERS: BaseScraper[] = [
   new GreenhouseScraper(),
   new SmartRecruitersScraper(),
   new AshbyScraper(),
+  // Big MNCs via Workday public CXS API (no auth)
+  new WorkdayScraper(),
+  // CoinDCX via MyNextHire ATS API (no auth)
+  new MyNextHireScraper(),
   // Indian startups via Playwright
   new StartupsScraper(),
 ];

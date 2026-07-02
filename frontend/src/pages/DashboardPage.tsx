@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { api } from '../lib/api';
-import type { Job, JobStatus } from '../lib/types';
+import { cacheGet, cacheSet, cacheClear } from '../lib/cache';
+import type { Job, JobStatus, JobsResponse, Stats } from '../lib/types';
 import {
   JOB_STATUSES,
   STATUS_COLORS,
@@ -46,6 +47,8 @@ export default function DashboardPage() {
   const [jobs, setJobs]               = useState<Job[]>([]);
   const [total, setTotal]             = useState(0);
   const [loading, setLoading]         = useState(true);
+  // True while cached results are on screen and a background refresh is in flight.
+  const [refreshing, setRefreshing]   = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError]             = useState(false);
   const [hasMore, setHasMore]         = useState(false);
@@ -77,18 +80,39 @@ export default function DashboardPage() {
     return p;
   }, [status, search, source, sortBy, easyApply, hasSalary]);
 
-  // Reset and load page 1 whenever filters change.
+  // Debounced live search — results update as you type, no Enter needed.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Load page 1 whenever filters change — cache-first, revalidate in background.
+  // A cached filter renders instantly (no spinner, no blank list); the network
+  // response then replaces it and refreshes the cache.
   useEffect(() => {
     const controller = new AbortController();
     abortRef.current = controller;
-    setLoading(true);
+    const cacheKey = `jobs:${JSON.stringify(filterParams)}`;
+    const cached = cacheGet<JobsResponse>(cacheKey);
+
     setError(false);
-    setJobs([]);
     setCursor(1);
-    setHasMore(false);
+
+    if (cached) {
+      setJobs(cached.jobs);
+      setTotal(cached.total);
+      setHasMore(cached.totalPages > 1);
+      setLoading(false);
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+      setJobs([]);
+      setHasMore(false);
+    }
 
     api.getJobs({ ...filterParams, page: '1' }, controller.signal)
       .then(data => {
+        cacheSet(cacheKey, data);
         setJobs(data.jobs);
         setTotal(data.total);
         setHasMore(data.totalPages > 1);
@@ -97,10 +121,13 @@ export default function DashboardPage() {
       .catch(err => {
         if (controller.signal.aborted) return; // superseded by a newer filter change
         console.error('Failed to load jobs:', err);
-        setError(true);
+        if (!cached) setError(true); // keep showing cached data on refresh failure
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       });
 
     return () => controller.abort();
@@ -142,21 +169,29 @@ export default function DashboardPage() {
     return () => obs.disconnect();
   }, [loadMore]);
 
-  // Sidebar counts + the platform filter's source list.
+  // Sidebar counts + the platform filter's source list — cache-first as well.
   useEffect(() => {
+    const apply = (s: Stats) => {
+      setStatusCounts(s.byStatus);
+      setSources(Object.keys(s.bySource).sort((a, b) => s.bySource[b] - s.bySource[a]));
+    };
+    const cached = cacheGet<Stats>('stats');
+    if (cached) apply(cached);
     api.getStats()
       .then(s => {
-        setStatusCounts(s.byStatus);
-        setSources(Object.keys(s.bySource).sort((a, b) => s.bySource[b] - s.bySource[a]));
+        cacheSet('stats', s);
+        apply(s);
       })
       .catch(err => console.error('Failed to load stats:', err));
-  }, []);
+  }, [reloadKey]);
 
   async function handleRunScraper() {
     if (scraperState === 'running') return;
     setScraperState('running');
     try {
       await api.runScraper();
+      // New jobs are incoming — cached lists/counts are about to go stale.
+      cacheClear();
       setScraperState('done');
     } catch {
       setScraperState('error');
@@ -260,6 +295,7 @@ export default function DashboardPage() {
             ))}
             {!loading && !error && (
               <span className="results-meta">
+                {refreshing && <span className="refresh-dot" title="Refreshing…" />}
                 <strong>{jobs.length}</strong> of <strong>{total}</strong>
               </span>
             )}
@@ -267,13 +303,12 @@ export default function DashboardPage() {
 
           <div className="filters-wrap">
             <div className="filters-bar">
-              <form className="search-wrap" onSubmit={e => { e.preventDefault(); setSearch(searchInput); }}>
+              <form className="search-wrap" onSubmit={e => { e.preventDefault(); setSearch(searchInput.trim()); }}>
                 <span className="search-icon">🔍</span>
                 <input
                   type="text" placeholder="Search title, company or tags…"
                   value={searchInput}
                   onChange={e => setSearchInput(e.target.value)}
-                  onBlur={() => { if (searchInput !== search) setSearch(searchInput); }}
                 />
               </form>
 
@@ -302,7 +337,9 @@ export default function DashboardPage() {
           </div>
 
           {loading ? (
-            <div className="loading-wrap"><div className="spinner" /> Loading jobs…</div>
+            <div className="jobs-list">
+              {Array.from({ length: 6 }, (_, i) => <JobCardSkeleton key={i} />)}
+            </div>
           ) : error ? (
             <div className="empty-state">
               <div className="empty-icon">⚠️</div>
@@ -340,6 +377,33 @@ export default function DashboardPage() {
         </div>
       </div>
     </>
+  );
+}
+
+// Shimmer placeholder shown on a cold load (no cached data for this filter yet).
+function JobCardSkeleton() {
+  return (
+    <div className="job-card skeleton-card">
+      <div className="job-accent sk-bg" />
+      <div className="job-body">
+        <div className="job-top">
+          <span className="sk sk-badge" />
+          <span className="sk sk-badge" style={{ width: 74 }} />
+          <span className="sk sk-pill" />
+        </div>
+        <div className="job-main">
+          <div className="sk sk-avatar" />
+          <div className="job-info">
+            <div className="sk sk-line" style={{ width: '55%' }} />
+            <div className="sk sk-line sk-line-sm" style={{ width: '35%' }} />
+          </div>
+        </div>
+        <div className="job-bottom">
+          <span className="sk sk-line sk-line-sm" style={{ width: 90 }} />
+          <span className="sk sk-btn" />
+        </div>
+      </div>
+    </div>
   );
 }
 

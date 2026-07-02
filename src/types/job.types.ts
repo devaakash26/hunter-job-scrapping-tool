@@ -9,6 +9,11 @@ export interface RawJob {
   postedAt: string;
   easyApply: boolean;
   ycBatch?: string;
+  // Filter-only fields (not persisted): raw experience text ("0-2 yrs") and
+  // the job description when a scraper fetched it — used to enforce the
+  // 0-2 years experience rule.
+  experience?: string;
+  description?: string;
 }
 
 export type JobStatus = 'new' | 'saved' | 'applied' | 'interview' | 'rejected' | 'offer';

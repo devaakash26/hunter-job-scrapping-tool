@@ -6,6 +6,17 @@ export class DedupService {
   async getNewJobs(jobs: RawJob[]): Promise<RawJob[]> {
     if (jobs.length === 0) return [];
 
+    // Self-dedupe first: one scrape can carry the same (company, title, source)
+    // several times — e.g. a LinkedIn posting listed per city — and the DB's
+    // unique constraint would reject the whole batch. First occurrence wins.
+    const seen = new Set<string>();
+    const uniqueJobs = jobs.filter((job) => {
+      const key = this.buildKey(job.company, job.title, job.source);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     try {
       const repo = AppDataSource.getRepository(Job);
 
@@ -18,12 +29,12 @@ export class DedupService {
         existingJobs.map((j) => this.buildKey(j.company, j.title, j.source)),
       );
 
-      return jobs.filter(
+      return uniqueJobs.filter(
         (job) => !existingKeys.has(this.buildKey(job.company, job.title, job.source)),
       );
     } catch (err) {
       console.error(`[${new Date().toISOString()}] [DEDUP] ERROR: Failed to check duplicates`, err);
-      return jobs;
+      return uniqueJobs;
     }
   }
 
@@ -49,10 +60,25 @@ export class DedupService {
     });
 
     try {
-      // Duplicates were already filtered in getNewJobs(); a unique-constraint
-      // hit here falls through to the catch below.
-      const saved = await repo.save(entities, { chunk: 50 });
-      console.log(`[${new Date().toISOString()}] [DEDUP] Saved ${saved.length} jobs to DB`);
+      // ON CONFLICT DO NOTHING: a duplicate that slipped past getNewJobs (e.g.
+      // two pipeline runs overlapping) skips that row instead of rolling back
+      // the whole batch. RETURNING * yields only the rows actually inserted.
+      const saved: Job[] = [];
+      for (let i = 0; i < entities.length; i += 50) {
+        const result = await repo
+          .createQueryBuilder()
+          .insert()
+          .into(Job)
+          .values(entities.slice(i, i + 50))
+          .orIgnore()
+          .returning('*')
+          .execute();
+        saved.push(...(result.raw as Job[]));
+      }
+      console.log(
+        `[${new Date().toISOString()}] [DEDUP] Saved ${saved.length} jobs to DB` +
+          (saved.length < entities.length ? ` (${entities.length - saved.length} conflicts skipped)` : ''),
+      );
       return saved;
     } catch (err) {
       console.error(`[${new Date().toISOString()}] [DEDUP] ERROR: Failed to save jobs`, err);

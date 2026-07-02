@@ -26,8 +26,13 @@ router.get('/api/jobs', async (req: Request, res: Response): Promise<void> => {
       ycOnly:    req.query.ycOnly === '1',
       hasSalary: req.query.hasSalary === '1',
     };
-    const { jobs, total } = await dashboardService.getJobs(filters);
-    res.json({ jobs, total, page: filters.page, totalPages: Math.ceil(total / DASHBOARD.ITEMS_PER_PAGE) });
+    const { jobs, total, hasMore } = await dashboardService.getJobs(filters);
+    const page = filters.page ?? 1;
+    // Deep pages return total: -1 (COUNT skipped) — synthesize totalPages from
+    // hasMore so the client's `page < totalPages` check keeps working.
+    const totalPages =
+      total >= 0 ? Math.ceil(total / DASHBOARD.ITEMS_PER_PAGE) : hasMore ? page + 1 : page;
+    res.json({ jobs, total, page, totalPages });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : 'Server error' });
   }

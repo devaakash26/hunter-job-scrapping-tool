@@ -2,6 +2,7 @@ import axios from 'axios';
 import { BaseScraper } from './base.scraper';
 import { RawJob } from '../types';
 import { SCRAPER } from '../constants';
+import { isIndiaLocation } from './location.util';
 
 interface SrJobAd {
   id?: string;
@@ -23,6 +24,8 @@ interface SmartRecruitersCompanyConfig {
   companyId: string;
   displayName: string;
   platform: string;
+  // Global employers post worldwide; keep only their India roles.
+  global?: boolean;
 }
 
 // companyId is case-sensitive and verified live against api.smartrecruiters.com
@@ -34,6 +37,8 @@ const SR_COMPANIES: SmartRecruitersCompanyConfig[] = [
   { companyId: 'Unacademy', displayName: 'Unacademy', platform: 'unacademy' },
   { companyId: 'InMobi', displayName: 'InMobi', platform: 'inmobi' },
   { companyId: 'MakeMyTrip', displayName: 'MakeMyTrip', platform: 'makemytrip' },
+  // Verified live July 2026 — big India engineering org (Hyderabad/Bengaluru).
+  { companyId: 'ServiceNow', displayName: 'ServiceNow', platform: 'servicenow', global: true },
 ];
 
 const ENGINEERING_KEYWORDS = ['engineer', 'developer', 'software', 'backend', 'frontend', 'fullstack', 'data', 'devops', 'platform', 'sde', 'sre', 'tech'];
@@ -66,6 +71,16 @@ export class SmartRecruitersScraper extends BaseScraper {
           const postings = res.data?.content ?? [];
           const jobs = postings
             .filter(isEngineeringJob)
+            .filter((j) =>
+              company.global
+                ? isIndiaLocation(
+                    j.location?.city,
+                    j.location?.region,
+                    j.location?.country,
+                    j.location?.fullLocation,
+                  ) || (j.location?.country ?? '').toLowerCase() === 'in'
+                : true,
+            )
             .slice(0, SCRAPER.MAX_JOBS_PER_COMPANY)
             .map((j): RawJob => {
               const location =

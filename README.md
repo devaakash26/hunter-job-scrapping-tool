@@ -1,6 +1,6 @@
 # Job Hunter 🎯
 
-Automated job scraping system that monitors **50+ companies** across 5 job boards and 4 ATS platforms twice daily. Filters by role, salary, and experience — deduplicates against the database, sends Slack alerts, and surfaces everything in a personal React dashboard.
+Automated job scraping system that monitors **90+ companies** across 5 job boards, 4 ATS platforms, and Workday twice daily. Filters for 0-2 yrs experience, ≥10 LPA (or undisclosed) salary, and India/remote locations — deduplicates against the database, sends Slack alerts, and surfaces everything in a personal React dashboard.
 
 **Stack:** Playwright · Express · TypeORM · Supabase PostgreSQL · QStash · React + Vite · Railway · Vercel
 
@@ -28,12 +28,17 @@ Runs at **9 AM IST** and **6 PM IST** daily. Manual trigger available in the das
 
 | Category | Platforms |
 |---|---|
-| **Job Boards** | Wellfound, Cutshort, Instahyre, LinkedIn, YC (Work at a Startup) |
+| **Job Boards** | Wellfound, Cutshort, Instahyre, LinkedIn (guest API, no login), YC (Work at a Startup) |
 | **Big 4** | Google, Microsoft, Amazon, Oracle |
-| **Greenhouse ATS** | Groww, CRED, Freshworks, BrowserStack, Hasura, Postman, Databricks, MongoDB, Stripe, Figma, Cloudflare, Anthropic, OpenAI, Chargebee, ShareChat, GitLab, Rubrik, Coinbase, ScaleAI, HackerRank, Twilio, Notion |
-| **Lever ATS** | Swiggy, Razorpay, Zepto, Meesho, Scaler, Dream11, Urban Company, Nykaa, Dunzo |
-| **SmartRecruiters** | InMobi, MakeMyTrip, Cars24, Unacademy |
-| **Playwright** | Zomato, Blinkit, PhonePe, Flipkart, Paytm, Myntra, Walmart Tech, Airbnb |
+| **Greenhouse ATS** | Groww, Postman, Slice, Razorpay, PhonePe, Databricks, HackerRank, Twilio, GitLab, Rubrik, Airbnb, Coinbase, MongoDB, Stripe, Figma, Cloudflare, Scale AI, Anthropic, Okta, Pure Storage, Harness, Elastic, Fivetran, Netskope, ClickHouse, Datadog, Cockroach Labs, HighRadius, Sigmoid, Glance, Zenoti, Druva, Observe.AI |
+| **Lever ATS** | Meesho, CRED, Paytm, Dream11 (Dream Sports), Hevo Data, Mindtickle, Zeta, Nium |
+| **Ashby ATS** | OpenAI, Notion, ElevenLabs, Atlan, Clarisights |
+| **SmartRecruiters** | Freshworks, Zomato, Cars24, Unacademy, InMobi, MakeMyTrip, ServiceNow |
+| **Workday (CXS API)** | Adobe, NVIDIA, Salesforce, Mastercard, Micron, Cadence, HPE, Target Tech |
+| **MyNextHire ATS** | CoinDCX |
+| **Playwright** | Zomato, Blinkit, PhonePe, Flipkart, Paytm, Myntra, Walmart Tech |
+
+All ATS/Workday company slugs are verified live against their public APIs (July 2026). Global companies are filtered to India-only roles; bot-protected hosts (LinkedIn) go through a shared serial rate-limit queue with exponential-backoff retries.
 
 ---
 

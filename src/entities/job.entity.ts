@@ -29,6 +29,7 @@ export class Job {
   @Column()
   url!: string;
 
+  @Index()
   @Column()
   source!: string;
 
@@ -44,6 +45,7 @@ export class Job {
   @Column({ nullable: true })
   ycBatch!: string;
 
+  @Index()
   @Column({ default: 'new' })
   status!: string;
 
@@ -53,6 +55,8 @@ export class Job {
   @Column({ nullable: true })
   appliedAt!: Date;
 
+  // Indexed — the dashboard list always sorts by it.
+  @Index()
   @CreateDateColumn()
   createdAt!: Date;
 }
