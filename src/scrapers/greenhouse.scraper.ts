@@ -53,6 +53,25 @@ const GREENHOUSE_COMPANIES: GreenhouseCompanyConfig[] = [
   { slug: 'cloudflare', displayName: 'Cloudflare', platform: 'cloudflare', global: true },
   { slug: 'scaleai', displayName: 'Scale AI', platform: 'scaleai', global: true },
   { slug: 'anthropic', displayName: 'Anthropic', platform: 'anthropic', global: true },
+  // Verified live July 2026 — India job counts at verification time in parens.
+  // Global product companies with large India engineering orgs.
+  { slug: 'okta', displayName: 'Okta', platform: 'okta', global: true }, // (114)
+  { slug: 'purestorage', displayName: 'Pure Storage', platform: 'purestorage', global: true }, // (68)
+  { slug: 'harnessinc', displayName: 'Harness', platform: 'harness', global: true }, // (24)
+  { slug: 'elastic', displayName: 'Elastic', platform: 'elastic', global: true }, // (16)
+  { slug: 'fivetran', displayName: 'Fivetran', platform: 'fivetran', global: true }, // (13)
+  { slug: 'netskope', displayName: 'Netskope', platform: 'netskope', global: true }, // (13)
+  { slug: 'clickhouse', displayName: 'ClickHouse', platform: 'clickhouse', global: true }, // (11)
+  { slug: 'datadog', displayName: 'Datadog', platform: 'datadog', global: true }, // (9)
+  { slug: 'cockroachlabs', displayName: 'Cockroach Labs', platform: 'cockroachlabs', global: true }, // (4)
+  // Indian-origin / India-first companies that also post some US roles, so
+  // they still get the India filter.
+  { slug: 'highradius', displayName: 'HighRadius', platform: 'highradius', global: true }, // (46)
+  { slug: 'sigmoid', displayName: 'Sigmoid', platform: 'sigmoid', global: true }, // (41)
+  { slug: 'glance', displayName: 'Glance (InMobi)', platform: 'glance', global: true }, // (20)
+  { slug: 'zenoti', displayName: 'Zenoti', platform: 'zenoti', global: true }, // (17)
+  { slug: 'druva', displayName: 'Druva', platform: 'druva', global: true }, // (11)
+  { slug: 'observeai', displayName: 'Observe.AI', platform: 'observeai', global: true }, // (4)
 ];
 
 const ENGINEERING_DEPTS = ['engineering', 'technology', 'software', 'product', 'data', 'backend', 'frontend', 'platform'];

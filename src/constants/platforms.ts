@@ -60,6 +60,46 @@ export const PLATFORMS = {
   PAYTM: "paytm",
   MYNTRA: "myntra",
   WALMART_TECH: "walmart_tech",
+  // Global product cos with India orgs — Greenhouse ATS (verified July 2026)
+  OKTA: "okta",
+  PURESTORAGE: "purestorage",
+  HARNESS: "harness",
+  ELASTIC: "elastic",
+  FIVETRAN: "fivetran",
+  NETSKOPE: "netskope",
+  CLICKHOUSE: "clickhouse",
+  DATADOG: "datadog",
+  COCKROACHLABS: "cockroachlabs",
+  // Indian-origin — Greenhouse ATS (verified July 2026)
+  HIGHRADIUS: "highradius",
+  SIGMOID: "sigmoid",
+  GLANCE: "glance",
+  ZENOTI: "zenoti",
+  DRUVA: "druva",
+  OBSERVEAI: "observeai",
+  // Indian startups — Lever ATS (verified July 2026)
+  DREAM11_SPORTS: "dream11",
+  HEVODATA: "hevodata",
+  MINDTICKLE: "mindtickle",
+  ZETA: "zeta",
+  NIUM: "nium",
+  // AI/product startups — Ashby ATS (verified July 2026)
+  ELEVENLABS: "elevenlabs",
+  ATLAN: "atlan",
+  CLARISIGHTS: "clarisights",
+  // SmartRecruiters (verified July 2026)
+  SERVICENOW: "servicenow",
+  // MyNextHire ATS (verified July 2026)
+  COINDCX: "coindcx",
+  // Big MNCs — Workday CXS API (verified July 2026)
+  ADOBE: "adobe",
+  NVIDIA: "nvidia",
+  SALESFORCE: "salesforce",
+  MASTERCARD: "mastercard",
+  MICRON: "micron",
+  CADENCE: "cadence",
+  HPE: "hpe",
+  TARGET_TECH: "target",
 } as const;
 
 export type Platform = (typeof PLATFORMS)[keyof typeof PLATFORMS];

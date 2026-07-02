@@ -10,11 +10,12 @@ function ensureFonts() {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href =
-    'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap';
+    'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap';
   document.head.appendChild(link);
 }
 
-// Curl-noise flow angle
+// ── Ember particle field (kept from v3, dimmed to sit behind the terminal) ──
+
 function flowAngle(x: number, y: number, t: number): number {
   return (
     Math.sin(x * 0.004 + t * 0.22) +
@@ -48,29 +49,61 @@ function seedEmber(e: Ember, W: number, H: number, randY = false) {
   e.size = 0.7 + Math.random() * 1.8;
 }
 
+// ── Live scraper feed — real sources and shapes from the actual pipeline ──
+
+interface FeedLine {
+  ts: string;
+  src: string;
+  msg: string;
+  ok?: boolean;
+}
+
+const FEED: [string, string, boolean?][] = [
+  ['boot', 'job-hunter pipeline · 38 sources armed'],
+  ['linkedin', 'guest api · page 1-5 · 50 found'],
+  ['greenhouse', 'okta +15 · purestorage +15 · glance +7'],
+  ['workday', 'adobe +14 · nvidia +11 · mastercard +20'],
+  ['lever', 'dream11 +6 · hevodata +15 · zeta +2'],
+  ['ashby', 'notion +3 · openai +6 · elevenlabs +7'],
+  ['smartrec', 'freshworks +15 · servicenow +6'],
+  ['mynexthire', 'coindcx · 8 screened'],
+  ['queue', 'linkedin throttled 1req/3s · 0 bans', true],
+  ['filter', '0-2 yrs · ≥10 LPA · india/remote'],
+  ['dedup', 'checked against db · fresh only'],
+  ['slack', 'alerts delivered', true],
+];
+
+function nowStamp(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 export default function LoginPage() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [clock,    setClock]    = useState('');
+  const [capsOn,   setCapsOn]   = useState(false);
+  const [shake,    setShake]    = useState(0);
+  const [feed,     setFeed]     = useState<FeedLine[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sheenRef  = useRef<HTMLSpanElement>(null);
-  const mouseRef  = useRef({ tx: 0, ty: 0, cx: 0, cy: 0 });
+  const feedIdx   = useRef(0);
 
+  useEffect(() => { ensureFonts(); }, []);
+
+  // Terminal feed: lines arrive one by one, then keep cycling like a live tail.
   useEffect(() => {
-    ensureFonts();
-
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const tick = () => {
-      const d = new Date();
-      setClock(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
+    const push = () => {
+      const [src, msg, ok] = FEED[feedIdx.current % FEED.length];
+      feedIdx.current += 1;
+      setFeed(prev => [...prev, { ts: nowStamp(), src, msg, ok }].slice(-9));
     };
-    tick();
-    const id = setInterval(tick, 1000);
+    push();
+    const id = setInterval(push, 1400);
     return () => clearInterval(id);
   }, []);
 
@@ -81,7 +114,6 @@ export default function LoginPage() {
     const ctx = canvas.getContext('2d')!;
     let raf: number;
     let t = 0;
-
     const dpr = window.devicePixelRatio || 1;
 
     const resize = () => {
@@ -96,7 +128,7 @@ export default function LoginPage() {
     resize();
     window.addEventListener('resize', resize);
 
-    const COUNT = 1600;
+    const COUNT = 700;
     const embers: Ember[] = [];
     for (let i = 0; i < COUNT; i++) {
       const e: Ember = { x: 0, y: 0, spd: 0, size: 0, r: 0, g: 0, b: 0 };
@@ -104,43 +136,29 @@ export default function LoginPage() {
       embers.push(e);
     }
 
-    const onMove = (ev: MouseEvent) => {
-      mouseRef.current.tx = (ev.clientX / window.innerWidth  - 0.5) * 24;
-      mouseRef.current.ty = (ev.clientY / window.innerHeight - 0.5) * 16;
-    };
-    window.addEventListener('mousemove', onMove);
-
     const animate = () => {
       raf = requestAnimationFrame(animate);
       t += 0.016;
-
-      const m = mouseRef.current;
-      m.cx += (m.tx - m.cx) * 0.04;
-      m.cy += (m.ty - m.cy) * 0.04;
-
       const W = window.innerWidth;
       const H = window.innerHeight;
 
       ctx.clearRect(0, 0, W, H);
       ctx.save();
-      ctx.translate(W / 2 + m.cx, H / 2 + m.cy);
+      ctx.translate(W / 2, H / 2);
 
       for (const e of embers) {
         const a = flowAngle(e.x * 0.003, e.y * 0.003, t);
         e.x += Math.cos(a) * e.spd;
         e.y += Math.sin(a) * e.spd - e.spd * 0.28;
-
         if (e.y < -H * 0.62 || e.x < -W * 1.3 || e.x > W * 1.3) {
           seedEmber(e, W, H, false);
         }
-
-        ctx.globalAlpha = 0.72;
+        ctx.globalAlpha = 0.4;
         ctx.beginPath();
         ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgb(${e.r | 0},${e.g | 0},${e.b | 0})`;
         ctx.fill();
       }
-
       ctx.restore();
       ctx.globalAlpha = 1;
     };
@@ -149,310 +167,325 @@ export default function LoginPage() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', onMove);
     };
   }, []);
 
-  function triggerSheen() {
-    const el = sheenRef.current;
-    if (!el) return;
-    el.style.transition = 'none';
-    el.style.transform  = 'translateX(-140%)';
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        el.style.transition = 'transform .9s ease';
-        el.style.transform  = 'translateX(140%)';
-      })
-    );
+  function onPwKey(ev: React.KeyboardEvent<HTMLInputElement>) {
+    setCapsOn(ev.getModifierState('CapsLock'));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
     setError('');
-    triggerSheen();
     setLoading(true);
     try {
       const { token: jwt } = await api.login(username, password);
       token.set(jwt);
       navigate(ROUTES.DASHBOARD);
     } catch {
-      setError('Invalid username or password');
+      setError('ACCESS DENIED — bad credentials');
+      setShake(s => s + 1);
     } finally {
       setLoading(false);
     }
   }
 
-  const inputBase: React.CSSProperties = {
-    width: '100%',
-    height: 50,
-    padding: '0 16px',
-    borderRadius: 11,
-    background: 'rgba(255,235,210,.04)',
-    border: '1px solid rgba(240,200,160,.13)',
-    color: '#f4ece0',
-    fontSize: 15,
-    fontFamily: "'Space Grotesk', -apple-system, sans-serif",
-    outline: 'none',
-    boxSizing: 'border-box',
-    transition: 'border-color .18s, box-shadow .18s, background .18s',
-  };
-
-  function onFocus(ev: React.FocusEvent<HTMLInputElement>) {
-    ev.currentTarget.style.borderColor = 'rgba(239,123,62,.85)';
-    ev.currentTarget.style.boxShadow   = '0 0 0 4px rgba(239,123,62,.15), 0 0 22px -4px rgba(239,123,62,.45)';
-    ev.currentTarget.style.background  = 'rgba(239,123,62,.07)';
-  }
-  function onBlur(ev: React.FocusEvent<HTMLInputElement>) {
-    ev.currentTarget.style.borderColor = 'rgba(240,200,160,.13)';
-    ev.currentTarget.style.boxShadow   = 'none';
-    ev.currentTarget.style.background  = 'rgba(255,235,210,.04)';
-  }
-
   return (
-    <div style={{
-      position: 'fixed', inset: 0, overflow: 'hidden',
-      background: 'radial-gradient(135% 120% at 50% 38%, #241a11 0%, #160f0a 48%, #0d0a07 100%)',
-      fontFamily: "'Space Grotesk', -apple-system, sans-serif",
-    }}>
-      {/* Ember particle canvas */}
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, display: 'block', zIndex: 0 }} />
+    <div className="jl-root">
+      <canvas ref={canvasRef} className="jl-embers" />
+      <div className="jl-grid" />
 
-      {/* Radial vignette */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
-        background: 'radial-gradient(70% 60% at 50% 50%, transparent 35%, rgba(10,7,4,.65) 100%)',
-      }} />
+      {/* ── Left: wordmark + live scraper feed ── */}
+      <div className="jl-left">
+        <div className="jl-hud">
+          <span className="jl-led" />
+          SCRAPER&nbsp;GRID&nbsp;·&nbsp;ONLINE
+        </div>
 
-      {/* HUD — top-left */}
-      <div style={{
-        position: 'absolute', top: 26, left: 32, zIndex: 2,
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 11, letterSpacing: '0.2em', color: '#7a6a55',
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        <span style={{
-          display: 'inline-block', width: 7, height: 7, borderRadius: 2,
-          background: '#ef7b3e', boxShadow: '0 0 10px #ef7b3e',
-          animation: 'jh-dot-pulse 2.4s ease-in-out infinite',
-        }} />
-        JOB&nbsp;HUNTER&nbsp;/&nbsp;SIGN&nbsp;IN
+        <div className="jl-wordmark">
+          <span className="jl-word-solid">JOB</span>
+          <span className="jl-word-ghost">HUNTER</span>
+          <p className="jl-tagline">
+            38 sources · 5 ATS platforms · filtered for 0-2&nbsp;yrs, ₹10L+, India&nbsp;/&nbsp;remote.
+            <br />Runs itself twice a day so you don't have to.
+          </p>
+        </div>
+
+        <div className="jl-term">
+          <div className="jl-term-head">
+            <span className="jl-term-dot" style={{ background: '#e2613a' }} />
+            <span className="jl-term-dot" style={{ background: '#f0a14e' }} />
+            <span className="jl-term-dot" style={{ background: '#3a3128' }} />
+            <span className="jl-term-title">pipeline · live tail</span>
+          </div>
+          <div className="jl-term-body">
+            {feed.map((l, i) => (
+              <div key={`${l.ts}-${i}`} className="jl-line">
+                <span className="jl-line-ts">{l.ts}</span>
+                <span className={`jl-line-src ${l.ok ? 'ok' : ''}`}>{l.src.padEnd(10, ' ')}</span>
+                <span className="jl-line-msg">{l.msg}</span>
+              </div>
+            ))}
+            <div className="jl-line">
+              <span className="jl-cursor" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* HUD — bottom-right clock */}
-      {clock && (
-        <div style={{
-          position: 'absolute', bottom: 26, right: 32, zIndex: 2,
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11, letterSpacing: '0.18em', color: '#57493a',
-        }}>
-          {clock}&nbsp;LOCAL
-        </div>
-      )}
+      {/* ── Right: sign-in ── */}
+      <div className="jl-right">
+        <form className="jl-form" onSubmit={handleSubmit} key={shake} style={shake ? { animation: 'jl-shake .4s' } : undefined}>
+          <div className="jl-form-eyebrow">RESTRICTED&nbsp;CONSOLE</div>
+          <h1 className="jl-form-title">Welcome back.</h1>
+          <p className="jl-form-sub">Sign in to reach the job board.</p>
 
-      {/* Centered card */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 3,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px 16px',
-      }}>
-        <div style={{
-          width: 420, maxWidth: '100%',
-          padding: '44px 40px 30px',
-          borderRadius: 20,
-          background: 'linear-gradient(180deg, rgba(40,31,22,.76), rgba(22,16,11,.82))',
-          border: '1px solid rgba(240,180,120,.12)',
-          boxShadow: '0 44px 96px -34px rgba(0,0,0,.88), inset 0 1px 0 rgba(255,225,190,.07)',
-          backdropFilter: 'blur(18px)',
-          WebkitBackdropFilter: 'blur(18px)',
-          position: 'relative', overflow: 'hidden',
-          animation: 'jh-rise .9s cubic-bezier(.2,.8,.2,1) both',
-        }}>
-          {/* Top shimmer line */}
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(245,175,115,.55), transparent)',
-          }} />
+          {error && <div className="jl-error">▸ {error}</div>}
 
-          {/* Logo */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
-            <div style={{
-              width: 74, height: 74, borderRadius: 19,
-              background: 'linear-gradient(148deg, #e9712f, #c8481f)',
-              boxShadow: '0 14px 36px -10px rgba(210,80,30,.72), inset 0 1px 0 rgba(255,220,185,.45)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative', flexShrink: 0,
-            }}>
-              <div style={{ position: 'absolute', inset: 0, borderRadius: 19, border: '1px solid rgba(255,215,175,.22)' }} />
-              {/* Outer ring */}
-              <div style={{
-                width: 38, height: 38, borderRadius: '50%',
-                border: '2.5px solid rgba(255,245,235,.75)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {/* Middle ring */}
-                <div style={{
-                  width: 20, height: 20, borderRadius: '50%',
-                  border: '2px solid rgba(255,245,235,.55)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {/* Core dot */}
-                  <div style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: '#fff5ec', boxShadow: '0 0 12px #ffd9b0',
-                    animation: 'jh-corepulse 2.6s ease-in-out infinite',
-                  }} />
-                </div>
-              </div>
-            </div>
+          <label className="jl-field">
+            <span className="jl-field-label">USERNAME</span>
+            <input
+              type="text" value={username} onChange={e => setUsername(e.target.value)}
+              autoComplete="username" spellCheck={false} required autoFocus
+            />
+          </label>
 
-            <h1 style={{
-              margin: '20px 0 0', fontSize: 27, fontWeight: 700,
-              letterSpacing: '-0.025em', color: '#f6ede1', lineHeight: 1.1,
-              fontFamily: "'Space Grotesk', sans-serif",
-            }}>
-              Job&nbsp;Hunter
-            </h1>
-
-            {/* Ink underline SVG */}
-            <svg width="124" height="10" viewBox="0 0 124 10" style={{ overflow: 'visible', margin: '4px 0 8px' }}>
-              <path
-                d="M2 5.5 C 24 2.5, 50 8, 72 4.5 S 112 2.5, 122 5.5"
-                fill="none" stroke="#ef7b3e" strokeWidth="2.3" strokeLinecap="round"
-                strokeDasharray="185" strokeDashoffset="185"
-                style={{ animation: 'jh-draw 1.1s .55s cubic-bezier(.6,0,.3,1) forwards' }}
-              />
-            </svg>
-
-            <p style={{ margin: 0, fontSize: 13.5, color: '#9c8c77', letterSpacing: '0.01em' }}>
-              Personal job tracking dashboard
-            </p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {error && (
-              <div style={{
-                padding: '10px 14px', borderRadius: 10,
-                background: 'rgba(220,55,35,.09)', border: '1px solid rgba(220,55,35,.22)',
-                color: '#f4a090', fontSize: 12.5,
-                fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em',
-              }}>
-                ⚠&nbsp;&nbsp;{error}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: '0.22em', color: '#8c7c66', fontWeight: 500 }}>
-                USERNAME
-              </span>
+          <label className="jl-field">
+            <span className="jl-field-label">
+              PASSWORD
+              {capsOn && <em className="jl-caps">CAPS LOCK ON</em>}
+            </span>
+            <div className="jl-pw-wrap">
               <input
-                type="text" value={username} onChange={e => setUsername(e.target.value)}
-                autoComplete="username" placeholder="your handle" required
-                style={inputBase} onFocus={onFocus} onBlur={onBlur}
+                type={showPw ? 'text' : 'password'} value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={onPwKey} onKeyUp={onPwKey}
+                autoComplete="current-password" required
               />
+              <button type="button" className="jl-pw-toggle" onClick={() => setShowPw(v => !v)}>
+                {showPw ? 'HIDE' : 'SHOW'}
+              </button>
             </div>
+          </label>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: '0.22em', color: '#8c7c66', fontWeight: 500 }}>
-                PASSWORD
-              </span>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <input
-                  type={showPw ? 'text' : 'password'} value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  autoComplete="current-password" placeholder="••••••••••" required
-                  style={{ ...inputBase, paddingRight: 58 }} onFocus={onFocus} onBlur={onBlur}
-                />
-                <button
-                  type="button" onClick={() => setShowPw(v => !v)}
-                  style={{
-                    position: 'absolute', right: 8, width: 42, height: 34,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: 'none', borderRadius: 7, cursor: 'pointer',
-                    background: 'transparent', color: '#a3927b',
-                    fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.06em', fontWeight: 500,
-                  }}
-                >
-                  {showPw ? 'HIDE' : 'SHOW'}
-                </button>
-              </div>
-            </div>
+          <button type="submit" className="jl-submit" disabled={loading}>
+            {loading ? (
+              <><span className="jl-spin" />AUTHENTICATING…</>
+            ) : (
+              <>ENTER CONSOLE<span className="jl-submit-arrow">→</span></>
+            )}
+          </button>
 
-            <button
-              type="submit" disabled={loading}
-              style={{
-                marginTop: 8, height: 54, border: 'none', borderRadius: 13,
-                cursor: loading ? 'default' : 'pointer',
-                position: 'relative', overflow: 'hidden',
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 15.5, fontWeight: 600, letterSpacing: '0.015em', color: '#fff6ee',
-                background: 'linear-gradient(100deg, #e2613a, #f0a14e)',
-                boxShadow: '0 16px 36px -12px rgba(226,97,58,.68), inset 0 1px 0 rgba(255,228,200,.38)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                opacity: loading ? 0.85 : 1,
-                transition: 'opacity .2s, transform .15s, box-shadow .2s',
-              }}
-              onMouseEnter={ev => {
-                if (!loading) {
-                  ev.currentTarget.style.transform = 'translateY(-1px)';
-                  ev.currentTarget.style.boxShadow = '0 20px 42px -12px rgba(226,97,58,.82), inset 0 1px 0 rgba(255,228,200,.38)';
-                }
-              }}
-              onMouseLeave={ev => {
-                ev.currentTarget.style.transform = '';
-                ev.currentTarget.style.boxShadow = '0 16px 36px -12px rgba(226,97,58,.68), inset 0 1px 0 rgba(255,228,200,.38)';
-              }}
-            >
-              {/* Sheen sweep */}
-              <span ref={sheenRef} style={{
-                position: 'absolute', inset: 0, pointerEvents: 'none',
-                background: 'linear-gradient(90deg, transparent, rgba(255,248,238,.32), transparent)',
-                transform: 'translateX(-140%)',
-              }} />
-              {loading ? (
-                <>
-                  <span style={{
-                    width: 17, height: 17, borderRadius: '50%',
-                    border: '2px solid rgba(255,246,238,.35)', borderTopColor: '#fff6ee',
-                    animation: 'jh-spin .7s linear infinite',
-                    display: 'inline-block', flexShrink: 0,
-                  }} />
-                  <span>Tracking down…</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign in</span>
-                  <span style={{ fontSize: 18, lineHeight: 0, marginTop: 1 }}>→</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          <div style={{
-            marginTop: 24, textAlign: 'center',
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10.5, letterSpacing: '0.16em', color: '#5a4d3c',
-          }}>
-            JOB&nbsp;HUNTER&nbsp;v3.0&nbsp;·&nbsp;PERSONAL&nbsp;USE&nbsp;ONLY
-          </div>
-        </div>
+          <div className="jl-hint">press <kbd>↵</kbd> to sign in</div>
+          <div className="jl-meta">JOB HUNTER v4 · SINGLE-SEAT · BUILT FOR ONE</div>
+        </form>
       </div>
 
       <style>{`
-        @keyframes jh-rise {
-          from { opacity: 0; transform: translateY(28px) scale(.982); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
+        .jl-root {
+          position: fixed; inset: 0; display: flex; overflow: hidden;
+          background: radial-gradient(120% 130% at 18% 30%, #1d150e 0%, #120d08 52%, #0b0806 100%);
+          font-family: 'Space Grotesk', -apple-system, sans-serif;
+          color: #f4ece0;
         }
-        @keyframes jh-draw { to { stroke-dashoffset: 0; } }
-        @keyframes jh-spin  { to { transform: rotate(360deg); } }
-        @keyframes jh-corepulse {
-          0%, 100% { opacity: .55; transform: scale(1); }
-          50%       { opacity: 1;   transform: scale(1.18); }
+        .jl-embers { position: absolute; inset: 0; z-index: 0; }
+        .jl-grid {
+          position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: .5;
+          background:
+            repeating-linear-gradient(0deg,  rgba(240,200,160,.028) 0 1px, transparent 1px 44px),
+            repeating-linear-gradient(90deg, rgba(240,200,160,.028) 0 1px, transparent 1px 44px);
+          mask-image: radial-gradient(80% 80% at 35% 45%, #000 30%, transparent 100%);
+          -webkit-mask-image: radial-gradient(80% 80% at 35% 45%, #000 30%, transparent 100%);
         }
-        @keyframes jh-dot-pulse {
-          0%, 100% { opacity: .5; }
-          50%       { opacity: 1; }
+
+        /* ── left panel ── */
+        .jl-left {
+          position: relative; z-index: 2; flex: 1.25; min-width: 0;
+          display: flex; flex-direction: column; justify-content: space-between;
+          padding: 34px 48px 38px;
+        }
+        .jl-hud {
+          display: flex; align-items: center; gap: 10px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px; letter-spacing: .22em; color: #7a6a55;
+        }
+        .jl-led {
+          width: 7px; height: 7px; border-radius: 2px; background: #ef7b3e;
+          box-shadow: 0 0 10px #ef7b3e; animation: jl-pulse 2.4s ease-in-out infinite;
+        }
+        .jl-wordmark { margin: 22px 0; }
+        .jl-word-solid, .jl-word-ghost {
+          display: block; font-weight: 700; line-height: .92;
+          font-size: clamp(56px, 9vw, 118px); letter-spacing: -0.04em;
+        }
+        .jl-word-solid { color: #f6ede1; }
+        .jl-word-ghost {
+          color: transparent;
+          -webkit-text-stroke: 1.5px rgba(239,123,62,.75);
+          text-shadow: 0 0 44px rgba(226,97,58,.25);
+        }
+        .jl-tagline {
+          margin: 22px 0 0; max-width: 460px;
+          font-size: 14px; line-height: 1.65; color: #9c8c77;
+        }
+
+        .jl-term {
+          width: min(560px, 100%);
+          border: 1px solid rgba(240,180,120,.14);
+          border-radius: 12px; overflow: hidden;
+          background: rgba(14,10,7,.72);
+          backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+          box-shadow: 0 30px 70px -30px rgba(0,0,0,.8);
+        }
+        .jl-term-head {
+          display: flex; align-items: center; gap: 6px;
+          padding: 10px 14px; border-bottom: 1px solid rgba(240,180,120,.1);
+          background: rgba(30,22,15,.55);
+        }
+        .jl-term-dot { width: 9px; height: 9px; border-radius: 50%; }
+        .jl-term-title {
+          margin-left: 10px; font-family: 'JetBrains Mono', monospace;
+          font-size: 10px; letter-spacing: .18em; color: #6d5d49;
+        }
+        .jl-term-body { padding: 13px 16px 15px; min-height: 208px; }
+        .jl-line {
+          display: flex; gap: 12px; align-items: baseline;
+          font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+          line-height: 1.9; white-space: nowrap; overflow: hidden;
+          animation: jl-linein .3s ease both;
+        }
+        .jl-line-ts  { color: #57493a; flex-shrink: 0; }
+        .jl-line-src { color: #ef7b3e; font-weight: 700; flex-shrink: 0; white-space: pre; }
+        .jl-line-src.ok { color: #7fc47f; }
+        .jl-line-msg { color: #b3a28b; text-overflow: ellipsis; overflow: hidden; }
+        .jl-cursor {
+          display: inline-block; width: 8px; height: 15px; margin-top: 3px;
+          background: #ef7b3e; animation: jl-blink 1s steps(1) infinite;
+        }
+
+        /* ── right panel ── */
+        .jl-right {
+          position: relative; z-index: 2; flex: 1; max-width: 520px; min-width: 400px;
+          display: flex; align-items: center; justify-content: center;
+          border-left: 1px solid rgba(240,180,120,.12);
+          background: linear-gradient(180deg, rgba(24,18,12,.88), rgba(14,10,7,.94));
+          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+          padding: 40px 52px;
+        }
+        .jl-form { width: 100%; max-width: 340px; }
+        .jl-form-eyebrow {
+          font-family: 'JetBrains Mono', monospace; font-size: 10px;
+          letter-spacing: .3em; color: #ef7b3e; margin-bottom: 14px;
+        }
+        .jl-form-title {
+          margin: 0; font-size: 34px; font-weight: 700;
+          letter-spacing: -0.03em; color: #f6ede1;
+        }
+        .jl-form-sub { margin: 8px 0 30px; font-size: 13.5px; color: #8c7c66; }
+
+        .jl-error {
+          font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+          letter-spacing: .05em; color: #f4a090;
+          border-left: 2px solid #dc3723; padding: 8px 12px; margin-bottom: 20px;
+          background: rgba(220,55,35,.07);
+        }
+
+        .jl-field { display: block; margin-bottom: 24px; }
+        .jl-field-label {
+          display: flex; justify-content: space-between; align-items: baseline;
+          font-family: 'JetBrains Mono', monospace; font-size: 10px;
+          letter-spacing: .24em; color: #8c7c66; margin-bottom: 4px;
+        }
+        .jl-caps {
+          font-style: normal; color: #f0a14e; letter-spacing: .12em;
+          animation: jl-pulse 1.2s ease-in-out infinite;
+        }
+        .jl-field input {
+          width: 100%; height: 44px; padding: 0 2px;
+          background: transparent; border: none; outline: none;
+          border-bottom: 1.5px solid rgba(240,200,160,.18);
+          color: #f4ece0; font-size: 16px; font-family: 'Space Grotesk', sans-serif;
+          border-radius: 0; transition: border-color .2s;
+          caret-color: #ef7b3e;
+        }
+        .jl-field input:focus { border-bottom-color: #ef7b3e; }
+        .jl-field input:-webkit-autofill {
+          -webkit-text-fill-color: #f4ece0;
+          -webkit-box-shadow: 0 0 0 1000px #16100b inset;
+          transition: background-color 9999s;
+        }
+        .jl-pw-wrap { position: relative; }
+        .jl-pw-toggle {
+          position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer; padding: 6px 2px;
+          font-family: 'JetBrains Mono', monospace; font-size: 10px;
+          letter-spacing: .1em; color: #a3927b;
+        }
+        .jl-pw-toggle:hover { color: #ef7b3e; }
+
+        .jl-submit {
+          width: 100%; height: 52px; margin-top: 10px;
+          display: flex; align-items: center; justify-content: center; gap: 12px;
+          border: none; border-radius: 10px; cursor: pointer;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12.5px; font-weight: 700; letter-spacing: .18em; color: #fff6ee;
+          background: linear-gradient(100deg, #e2613a, #f0a14e);
+          box-shadow: 0 16px 36px -12px rgba(226,97,58,.6);
+          transition: transform .15s, box-shadow .2s, opacity .2s;
+        }
+        .jl-submit:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 20px 44px -12px rgba(226,97,58,.8);
+        }
+        .jl-submit:disabled { opacity: .8; cursor: default; }
+        .jl-submit-arrow { transition: transform .18s; font-size: 15px; }
+        .jl-submit:hover .jl-submit-arrow { transform: translateX(4px); }
+        .jl-spin {
+          width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+          border: 2px solid rgba(255,246,238,.35); border-top-color: #fff6ee;
+          animation: jl-spinner .7s linear infinite;
+        }
+
+        .jl-hint {
+          margin-top: 18px; text-align: center;
+          font-size: 11.5px; color: #6d5d49;
+        }
+        .jl-hint kbd {
+          font-family: 'JetBrains Mono', monospace; font-size: 10px;
+          border: 1px solid rgba(240,200,160,.22); border-bottom-width: 2px;
+          border-radius: 4px; padding: 1px 6px; margin: 0 2px; color: #a3927b;
+        }
+        .jl-meta {
+          margin-top: 34px; text-align: center;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 9.5px; letter-spacing: .18em; color: #4d4234;
+        }
+
+        @keyframes jl-pulse   { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+        @keyframes jl-blink   { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+        @keyframes jl-spinner { to { transform: rotate(360deg); } }
+        @keyframes jl-linein  { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+        @keyframes jl-shake {
+          10%, 90% { transform: translateX(-2px); }
+          20%, 80% { transform: translateX(3px); }
+          30%, 70% { transform: translateX(-5px); }
+          40%, 60% { transform: translateX(5px); }
+          50%      { transform: translateX(-3px); }
+        }
+
+        @media (max-width: 920px) {
+          .jl-root { flex-direction: column; overflow-y: auto; }
+          .jl-left { flex: none; padding: 26px 24px 8px; }
+          .jl-wordmark { margin: 16px 0; }
+          .jl-word-solid, .jl-word-ghost { font-size: clamp(44px, 13vw, 72px); }
+          .jl-tagline { font-size: 13px; }
+          .jl-term { display: none; }
+          .jl-right {
+            flex: none; max-width: none; min-width: 0; width: 100%;
+            border-left: none; border-top: 1px solid rgba(240,180,120,.12);
+            padding: 34px 24px 44px;
+          }
         }
       `}</style>
     </div>

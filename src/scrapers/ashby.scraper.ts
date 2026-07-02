@@ -36,6 +36,10 @@ interface AshbyCompanyConfig {
 const ASHBY_COMPANIES: AshbyCompanyConfig[] = [
   { slug: 'openai', displayName: 'OpenAI', platform: 'openai', global: true },
   { slug: 'notion', displayName: 'Notion', platform: 'notion', global: true },
+  // Verified live July 2026 — India job counts at verification time in parens.
+  { slug: 'elevenlabs', displayName: 'ElevenLabs', platform: 'elevenlabs', global: true }, // (12)
+  { slug: 'atlan', displayName: 'Atlan', platform: 'atlan', global: true }, // (4)
+  { slug: 'clarisights', displayName: 'Clarisights', platform: 'clarisights', global: true }, // (2)
 ];
 
 const ENGINEERING_KEYWORDS = ['engineer', 'developer', 'software', 'backend', 'frontend', 'full stack', 'fullstack', 'sde', 'data', 'platform', 'infrastructure'];

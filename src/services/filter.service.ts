@@ -1,5 +1,7 @@
 import { RawJob } from '../types';
 import { FILTER } from '../constants';
+import { extractExperience } from '../utils/experience.util';
+import { isIndiaLocation } from '../scrapers/location.util';
 
 export class FilterService {
   filterJobs(jobs: RawJob[]): RawJob[] {
@@ -11,10 +13,30 @@ export class FilterService {
     if (!this.hasIncludeKeyword(job)) return false;
     if (!this.isLocationAcceptable(job)) return false;
     if (!this.isSalaryAcceptable(job)) return false;
+    if (!this.isExperienceAcceptable(job)) return false;
     return true;
   }
 
+  // Keep only 0-2 yrs roles. A job that never states experience is kept —
+  // the include/exclude keywords already remove obviously-senior titles.
+  private isExperienceAcceptable(job: RawJob): boolean {
+    const text = [job.title, job.tags, job.experience, job.description]
+      .filter(Boolean)
+      .join(' ');
+
+    const range = extractExperience(text);
+    if (!range) return true;
+
+    return range.min <= FILTER.MAX_EXPERIENCE_YEARS;
+  }
+
+  // Ladder levels II+ ("SDE-2", "Engineer III", "Developer (II)") are 2+ yrs
+  // roles regardless of how the level is punctuated.
+  private static readonly LEVELED_TITLE_RE =
+    /(?:engineer|developer|sde)\s*[-–—(]*\s*(?:i{2,3}|iv|[2-9])\b/i;
+
   private hasExcludeKeyword(job: RawJob): boolean {
+    if (FilterService.LEVELED_TITLE_RE.test(job.title)) return true;
     const searchText = `${job.title} ${job.tags}`.toLowerCase();
     return FILTER.EXCLUDE_KEYWORDS.some((kw) => searchText.includes(kw.toLowerCase()));
   }
@@ -27,6 +49,11 @@ export class FilterService {
   private isLocationAcceptable(job: RawJob): boolean {
     if (!job.location) return true;
     const loc = job.location.toLowerCase();
+    // "Remote - Canada" must lose to the foreign-region check before the
+    // bare "remote" keyword can accept it.
+    if (FILTER.EXCLUDE_LOCATIONS.some((l) => loc.includes(l.toLowerCase()))) return false;
+    // Any Indian metro counts (shared matcher), plus remote/wfh/hybrid.
+    if (isIndiaLocation(loc)) return true;
     return FILTER.PREFERRED_LOCATIONS.some((l) => loc.includes(l.toLowerCase()));
   }
 

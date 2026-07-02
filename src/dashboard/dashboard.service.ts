@@ -4,7 +4,11 @@ import { JobFilters, JobStatus, DashboardStats } from '../types';
 import { DASHBOARD, FILTER } from '../constants';
 
 export class DashboardService {
-  async getJobs(filters: JobFilters): Promise<{ jobs: Job[]; total: number }> {
+  // getStats runs 5 queries; cache briefly so tab switches don't re-hit the DB.
+  private statsCache: { data: DashboardStats; at: number } | null = null;
+  private static readonly STATS_TTL_MS = 30_000;
+
+  async getJobs(filters: JobFilters): Promise<{ jobs: Job[]; total: number; hasMore: boolean }> {
     const repo = AppDataSource.getRepository(Job);
     const qb = repo.createQueryBuilder('job');
 
@@ -45,12 +49,21 @@ export class DashboardService {
     qb.orderBy(col, dir);
 
     const page = filters.page ?? 1;
-    const [jobs, total] = await qb
-      .skip((page - 1) * DASHBOARD.ITEMS_PER_PAGE)
-      .take(DASHBOARD.ITEMS_PER_PAGE)
-      .getManyAndCount();
+    const perPage = DASHBOARD.ITEMS_PER_PAGE;
 
-    return { jobs, total };
+    if (page === 1) {
+      const [jobs, total] = await qb.take(perPage).getManyAndCount();
+      return { jobs, total, hasMore: total > perPage };
+    }
+
+    // Deeper (infinite-scroll) pages skip the COUNT — the client already has
+    // the total from page 1. Fetch one extra row to detect whether more exist.
+    const rows = await qb
+      .skip((page - 1) * perPage)
+      .take(perPage + 1)
+      .getMany();
+
+    return { jobs: rows.slice(0, perPage), total: -1, hasMore: rows.length > perPage };
   }
 
   async updateJobStatus(jobId: number, status: JobStatus): Promise<Job | null> {
@@ -59,10 +72,15 @@ export class DashboardService {
     if (!job) return null;
     job.status = status;
     if (status === 'applied') job.appliedAt = new Date();
+    this.statsCache = null; // status counts just changed
     return repo.save(job);
   }
 
   async getStats(): Promise<DashboardStats> {
+    if (this.statsCache && Date.now() - this.statsCache.at < DashboardService.STATS_TTL_MS) {
+      return this.statsCache.data;
+    }
+
     const repo = AppDataSource.getRepository(Job);
     const total = await repo.count();
 
@@ -83,7 +101,7 @@ export class DashboardService {
     const appliedCount   = parseInt(byStatusRaw.find(r => r.status === 'applied')?.count   ?? '0');
     const interviewCount = parseInt(byStatusRaw.find(r => r.status === 'interview')?.count ?? '0');
 
-    return {
+    const stats: DashboardStats = {
       total,
       byStatus: Object.fromEntries(byStatusRaw.map(r => [r.status, parseInt(r.count)])),
       bySource: Object.fromEntries(bySourceRaw.map(r => [r.source, parseInt(r.count)])),
@@ -91,5 +109,7 @@ export class DashboardService {
       lastWeek,
       responseRate: appliedCount > 0 ? Math.round((interviewCount / appliedCount) * 100) : 0,
     };
+    this.statsCache = { data: stats, at: Date.now() };
+    return stats;
   }
 }

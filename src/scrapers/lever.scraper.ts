@@ -2,6 +2,7 @@ import axios from 'axios';
 import { BaseScraper } from './base.scraper';
 import { RawJob } from '../types';
 import { SCRAPER } from '../constants';
+import { isIndiaLocation } from './location.util';
 
 interface LeverPosting {
   id?: string;
@@ -11,6 +12,7 @@ interface LeverPosting {
     department?: string;
     location?: string;
     team?: string;
+    allLocations?: string[];
   };
   description?: string;
   descriptionPlain?: string;
@@ -25,15 +27,23 @@ interface LeverCompanyConfig {
   slug: string;
   displayName: string;
   platform: string;
+  // Global employers post worldwide; keep only their India roles.
+  global?: boolean;
 }
 
 // Slugs verified live against api.lever.co (June 2026). Razorpay moved to
-// Greenhouse; swiggy/zepto/scaler/dream11/urbancompany/nykaa/dunzo are no
+// Greenhouse; swiggy/zepto/scaler/urbancompany/nykaa/dunzo are no
 // longer on Lever (404) and were dropped.
 const LEVER_COMPANIES: LeverCompanyConfig[] = [
   { slug: 'meesho', displayName: 'Meesho', platform: 'meesho' },
   { slug: 'cred', displayName: 'CRED', platform: 'cred' },
   { slug: 'paytm', displayName: 'Paytm', platform: 'paytm' },
+  // Verified live July 2026 — India job counts at verification time in parens.
+  { slug: 'dreamsports', displayName: 'Dream11 (Dream Sports)', platform: 'dream11' }, // (22)
+  { slug: 'hevodata', displayName: 'Hevo Data', platform: 'hevodata', global: true }, // (35)
+  { slug: 'mindtickle', displayName: 'Mindtickle', platform: 'mindtickle', global: true }, // (21)
+  { slug: 'zeta', displayName: 'Zeta', platform: 'zeta', global: true }, // (15)
+  { slug: 'nium', displayName: 'Nium', platform: 'nium', global: true }, // (11)
 ];
 
 const ENGINEERING_DEPARTMENTS = ['engineering', 'technology', 'software', 'product', 'data', 'backend', 'frontend'];
@@ -71,6 +81,14 @@ export class LeverScraper extends BaseScraper {
           const postings = Array.isArray(res.data) ? res.data : [];
           const jobs = postings
             .filter(isEngineeringRole)
+            .filter((p) =>
+              company.global
+                ? isIndiaLocation(
+                    p.categories?.location,
+                    (p.categories?.allLocations ?? []).join(' '),
+                  )
+                : true,
+            )
             .slice(0, SCRAPER.MAX_JOBS_PER_COMPANY)
             .map((p): RawJob => ({
               title: p.text || 'Unknown',
